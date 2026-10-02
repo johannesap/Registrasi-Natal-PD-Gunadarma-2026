@@ -1,0 +1,173 @@
+@import "tailwindcss";
+
+@theme {
+  --font-cinzel: 'Cinzel', serif;
+  --font-garamond: 'Cormorant Garamond', serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+}
+
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: #02040a;
+    color: #f3f4f6;
+    overflow-x: hidden;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  }
+}
+
+/* Custom Cinematic Keyframes and Effects */
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+    filter: drop-shadow(0 0 15px rgba(250, 204, 21, 0.45));
+  }
+  50% {
+    opacity: 0.95;
+    transform: scale(1.08);
+    filter: drop-shadow(0 0 35px rgba(250, 204, 21, 0.8)) drop-shadow(0 0 60px rgba(234, 179, 8, 0.5));
+  }
+}
+
+@keyframes rotateRays {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes shimmerSweep {
+  0% {
+    transform: translateX(-150%) skewX(-25deg);
+  }
+  100% {
+    transform: translateX(250%) skewX(-25deg);
+  }
+}
+
+@keyframes subtleFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes goldBreath {
+  0%, 100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.65;
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 4s ease-in-out infinite;
+}
+
+.animate-rotate-slow {
+  animation: rotateRays 40s linear infinite;
+}
+
+.animate-rotate-reverse-slow {
+  animation: rotateRays 55s linear infinite reverse;
+}
+
+.animate-subtle-float {
+  animation: subtleFloat 6s ease-in-out infinite;
+}
+
+.animate-gold-breath {
+  animation: goldBreath 5s ease-in-out infinite;
+}
+
+/* Gold Text Shimmer */
+.text-gold-gradient {
+  background: linear-gradient(135deg, #FFF9D2 0%, #F5D061 30%, #E6B325 60%, #FFF5C0 85%, #D4AF37 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gold-glow {
+  text-shadow: 0 0 25px rgba(245, 208, 97, 0.45), 0 0 50px rgba(230, 179, 37, 0.25);
+}
+
+.text-white-glow {
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.4), 0 0 40px rgba(255, 255, 255, 0.15);
+}
+
+/* Glassmorphism Classes */
+.glass-panel {
+  background: rgba(8, 15, 30, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(245, 208, 97, 0.15);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.glass-panel-subtle {
+  background: rgba(10, 20, 38, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Gold Button Glow */
+.gold-btn {
+  background: linear-gradient(135deg, #ffe17d 0%, #e5b323 50%, #b8860b 100%);
+  box-shadow: 0 0 25px rgba(229, 179, 35, 0.4), 0 4px 15px rgba(0, 0, 0, 0.4);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.gold-btn:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 0 35px rgba(245, 208, 97, 0.7), 0 8px 25px rgba(0, 0, 0, 0.5);
+}
+
+.gold-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  transform: translateX(-150%) skewX(-25deg);
+  transition: none;
+}
+
+.gold-btn:hover::after {
+  animation: shimmerSweep 1.2s infinite;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #02040a;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 4px;
+  border: 1px solid rgba(245, 208, 97, 0.2);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
