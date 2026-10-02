@@ -231,7 +231,7 @@ export default function AudioAmbience() {
     <button
       onClick={toggleSound}
       type="button"
-      className="flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium tracking-wider transition-all duration-300 backdrop-blur-md border cursor-pointer group shadow-sm"
+      className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 rounded-full text-xs font-medium tracking-wider transition-all duration-300 backdrop-blur-md border cursor-pointer group shadow-sm shrink-0"
       style={{
         background: isPlaying
           ? 'linear-gradient(135deg, rgba(234, 179, 8, 0.25) 0%, rgba(220, 38, 38, 0.2) 100%)'
@@ -245,14 +245,14 @@ export default function AudioAmbience() {
     >
       {isPlaying ? (
         <>
-          <Bell className="w-3.5 h-3.5 text-amber-300 animate-bounce" />
-          <span className="font-semibold text-amber-200">Jingle Bells</span>
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+          <Bell className="w-3.5 h-3.5 text-amber-300 animate-bounce shrink-0" />
+          <span className="font-semibold text-amber-200 hidden sm:inline">Jingle Bells</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping shrink-0" />
         </>
       ) : (
         <>
-          <BellOff className="w-3.5 h-3.5 group-hover:text-amber-300 transition-colors" />
-          <span className="group-hover:text-amber-200 transition-colors">Jingle Bells</span>
+          <BellOff className="w-3.5 h-3.5 group-hover:text-amber-300 transition-colors shrink-0" />
+          <span className="group-hover:text-amber-200 transition-colors hidden sm:inline">Jingle Bells</span>
         </>
       )}
     </button>

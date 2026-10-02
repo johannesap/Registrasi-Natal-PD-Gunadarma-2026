@@ -10,14 +10,14 @@ export default function ChristmasStar() {
       className="relative flex items-center justify-center pointer-events-none select-none"
     >
       {/* 1. Deep Celestial Warm Center Bloom */}
-      <div className="absolute w-72 h-72 sm:w-96 sm:h-96 rounded-full bg-gradient-to-r from-amber-400/25 via-yellow-200/20 to-transparent blur-3xl -z-10 animate-gold-breath" />
+      <div className="absolute w-52 h-52 sm:w-72 sm:h-72 md:w-96 md:h-96 rounded-full bg-gradient-to-r from-amber-400/25 via-yellow-200/20 to-transparent blur-3xl -z-10 animate-gold-breath" />
       
       {/* 2. Soft Red & Emerald Ambient Radiance (Sacred Christmas Colors) */}
-      <div className="absolute w-80 h-32 rounded-full bg-rose-600/10 blur-3xl -z-10" />
-      <div className="absolute w-32 h-80 rounded-full bg-emerald-600/10 blur-3xl -z-10" />
+      <div className="absolute w-56 sm:w-80 h-24 sm:h-32 rounded-full bg-rose-600/10 blur-2xl sm:blur-3xl -z-10" />
+      <div className="absolute w-24 sm:w-32 h-56 sm:h-80 rounded-full bg-emerald-600/10 blur-2xl sm:blur-3xl -z-10" />
 
       {/* 3. Rotating Light Rays Corona */}
-      <div className="absolute w-64 h-64 sm:w-80 sm:h-80 animate-rotate-slow opacity-60">
+      <div className="absolute w-44 h-44 sm:w-64 sm:h-64 md:w-80 md:h-80 animate-rotate-slow opacity-60">
         <svg viewBox="0 0 200 200" className="w-full h-full">
           <defs>
             <radialGradient id="rayGrad" cx="50%" cy="50%" r="50%">
@@ -44,7 +44,7 @@ export default function ChristmasStar() {
       </div>
 
       {/* 4. Reverse Rotating Secondary Rays for shimmer depth */}
-      <div className="absolute w-52 h-52 sm:w-64 sm:h-64 animate-rotate-reverse-slow opacity-40">
+      <div className="absolute w-36 h-36 sm:w-52 sm:h-52 md:w-64 md:h-64 animate-rotate-reverse-slow opacity-40">
         <svg viewBox="0 0 200 200" className="w-full h-full">
           {[15, 45, 75, 105, 135, 165].map((deg) => (
             <line
@@ -63,7 +63,7 @@ export default function ChristmasStar() {
       </div>
 
       {/* 5. Bethlehem 8-Point Star with Pulse Animation */}
-      <div className="relative w-28 h-28 sm:w-36 sm:h-36 animate-pulse-glow flex items-center justify-center">
+      <div className="relative w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-36 animate-pulse-glow flex items-center justify-center">
         <svg
           viewBox="0 0 200 200"
           className="w-full h-full drop-shadow-[0_0_25px_rgba(245,208,97,0.9)]"

@@ -236,15 +236,15 @@ export default function RegistrationSection({ onBackToHero }) {
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.9 }}
-          className="lg:col-span-7 glass-panel rounded-2xl p-6 sm:p-9 relative overflow-hidden"
+          className="lg:col-span-7 glass-panel rounded-2xl p-4 sm:p-7 md:p-9 relative overflow-hidden"
         >
           {/* Subtle Top Gold Accent Bar */}
           <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-amber-500/20 via-amber-400 to-amber-500/20" />
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
             {/* Field: Nama Lengkap */}
             <div>
-              <label className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-2">
+              <label className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5 sm:mb-2">
                 Nama Lengkap <span className="text-rose-400">*</span>
               </label>
               <div className="relative">
@@ -258,15 +258,15 @@ export default function RegistrationSection({ onBackToHero }) {
                   value={formData.fullName}
                   onChange={handleChange}
                   placeholder="Contoh: Jonathan Kevin Situmorang"
-                  className="w-full pl-10 pr-4 py-3 bg-neutral-900/70 border border-white/10 rounded-xl text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all backdrop-blur-sm"
+                  className="w-full pl-10 pr-4 py-3 bg-neutral-900/70 border border-white/10 rounded-xl text-base sm:text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all backdrop-blur-sm"
                 />
               </div>
             </div>
 
             {/* Field: NPM & Region Kampus (2 Columns) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
               <div>
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-1.5 sm:mb-2">
                   <label className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase">
                     NPM (Maks 8 Angka) <span className="text-rose-400">*</span>
                   </label>
@@ -287,13 +287,13 @@ export default function RegistrationSection({ onBackToHero }) {
                     onChange={handleChange}
                     placeholder="Contoh: 50421890"
                     maxLength={8}
-                    className="w-full pl-10 pr-4 py-3 bg-neutral-900/70 border border-white/10 rounded-xl text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all font-mono tracking-wider"
+                    className="w-full pl-10 pr-4 py-3 bg-neutral-900/70 border border-white/10 rounded-xl text-base sm:text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all font-mono tracking-wider"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-2">
+                <label className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5 sm:mb-2">
                   Region Kampus <span className="text-rose-400">*</span>
                 </label>
                 <div className="relative">
@@ -304,7 +304,7 @@ export default function RegistrationSection({ onBackToHero }) {
                     name="region"
                     value={formData.region}
                     onChange={handleChange}
-                    className="w-full pl-10 pr-10 py-3 bg-neutral-900/80 border border-white/10 rounded-xl text-sm text-gray-100 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all appearance-none cursor-pointer"
+                    className="w-full pl-10 pr-10 py-3 bg-neutral-900/80 border border-white/10 rounded-xl text-base sm:text-sm text-gray-100 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all appearance-none cursor-pointer"
                   >
                     {REGIONS.map((r) => (
                       <option key={r.id} value={r.id} className="bg-neutral-900 text-gray-100">
@@ -320,9 +320,9 @@ export default function RegistrationSection({ onBackToHero }) {
             </div>
 
             {/* Field: Email & WhatsApp (2 Columns) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
               <div>
-                <label className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-2">
+                <label className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5 sm:mb-2">
                   Email Aktif <span className="text-rose-400">*</span>
                 </label>
                 <div className="relative">
@@ -336,13 +336,13 @@ export default function RegistrationSection({ onBackToHero }) {
                     value={formData.email}
                     onChange={handleChange}
                     placeholder="Contoh: nama@gmail.com"
-                    className="w-full pl-10 pr-4 py-3 bg-neutral-900/70 border border-white/10 rounded-xl text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
+                    className="w-full pl-10 pr-4 py-3 bg-neutral-900/70 border border-white/10 rounded-xl text-base sm:text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
                   />
                 </div>
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-1.5 sm:mb-2">
                   <label className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase">
                     Nomor WhatsApp (Maks 13 Angka) <span className="text-rose-400">*</span>
                   </label>
@@ -363,14 +363,14 @@ export default function RegistrationSection({ onBackToHero }) {
                     onChange={handleChange}
                     placeholder="Contoh: 081234567890"
                     maxLength={13}
-                    className="w-full pl-10 pr-4 py-3 bg-neutral-900/70 border border-white/10 rounded-xl text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all font-mono"
+                    className="w-full pl-10 pr-4 py-3 bg-neutral-900/70 border border-white/10 rounded-xl text-base sm:text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all font-mono"
                   />
                 </div>
               </div>
             </div>
 
             {/* Field: Status Komsel & Nama Kakak Komsel */}
-            <div className="space-y-3 p-4 rounded-xl bg-amber-950/15 border border-amber-400/15">
+            <div className="space-y-3 p-3.5 sm:p-4 rounded-xl bg-amber-950/15 border border-amber-400/15">
               <label className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase">
                 Kelompok Sel (Komsel) & Mentor <span className="text-rose-400">*</span>
               </label>
@@ -383,7 +383,7 @@ export default function RegistrationSection({ onBackToHero }) {
                   name="komselStatus"
                   value={formData.komselStatus}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-10 py-3 bg-neutral-900/80 border border-white/10 rounded-xl text-xs sm:text-sm text-gray-100 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all appearance-none cursor-pointer"
+                  className="w-full pl-10 pr-10 py-3 bg-neutral-900/80 border border-white/10 rounded-xl text-base sm:text-sm text-gray-100 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all appearance-none cursor-pointer"
                 >
                   {KOMSEL_OPTIONS.map((opt, idx) => (
                     <option key={idx} value={opt} className="bg-neutral-900 text-gray-100">
@@ -412,7 +412,7 @@ export default function RegistrationSection({ onBackToHero }) {
                   onChange={handleChange}
                   readOnly={isBelumPunya}
                   placeholder={isBelumPunya ? '-' : 'Contoh: Kak Daniel / Kak Maria'}
-                  className={`w-full px-4 py-2.5 rounded-xl text-sm transition-all ${
+                  className={`w-full px-4 py-2.5 rounded-xl text-base sm:text-sm transition-all ${
                     isBelumPunya
                       ? 'bg-neutral-800/60 border border-amber-400/30 text-amber-300 font-mono text-center font-bold cursor-not-allowed'
                       : 'bg-neutral-900/70 border border-white/10 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400'
@@ -423,7 +423,7 @@ export default function RegistrationSection({ onBackToHero }) {
 
             {/* Field: Jurusan / Fakultas */}
             <div>
-              <label className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-2">
+              <label className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5 sm:mb-2">
                 Jurusan / Fakultas
               </label>
               <div className="relative">
@@ -436,7 +436,7 @@ export default function RegistrationSection({ onBackToHero }) {
                   value={formData.faculty}
                   onChange={handleChange}
                   placeholder="Contoh: Informatika / FTI"
-                  className="w-full pl-10 pr-4 py-3 bg-neutral-900/70 border border-white/10 rounded-xl text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
+                  className="w-full pl-10 pr-4 py-3 bg-neutral-900/70 border border-white/10 rounded-xl text-base sm:text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
                 />
               </div>
             </div>
@@ -486,7 +486,7 @@ export default function RegistrationSection({ onBackToHero }) {
             </div>
 
             {/* Christmas Digital Ticket Card */}
-            <div className="relative rounded-2xl overflow-hidden border border-amber-400/30 bg-gradient-to-b from-[#09152b] via-[#051a14] to-[#1a060d] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-xl">
+            <div className="relative rounded-2xl overflow-hidden border border-amber-400/30 bg-gradient-to-b from-[#09152b] via-[#051a14] to-[#1a060d] p-4 sm:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-xl">
               {/* Gold foil ribbon border top */}
               <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500" />
 
@@ -503,15 +503,15 @@ export default function RegistrationSection({ onBackToHero }) {
                   <span className="text-[10px] tracking-[0.25em] uppercase text-amber-300 font-semibold block">
                     PERSEKUTUAN DOA UNIVERSITAS GUNADARMA
                   </span>
-                  <h3 className="text-2xl font-bold font-['Cinzel'] text-gold-gradient uppercase mt-0.5 tracking-wider">
+                  <h3 className="text-xl sm:text-2xl font-bold font-['Cinzel'] text-gold-gradient uppercase mt-0.5 tracking-wider">
                     NATAL 2026
                   </h3>
                   <p className="text-[11px] text-amber-100/70 italic font-['Cormorant_Garamond']">
                     &ldquo;Merayakan Kasih, Menyalakan Harapan&rdquo;
                   </p>
                 </div>
-                <div className="w-11 h-11 rounded-full bg-amber-400/10 border border-amber-400/30 flex items-center justify-center shrink-0">
-                  <Sparkles className="w-5 h-5 text-amber-300" />
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-amber-400/10 border border-amber-400/30 flex items-center justify-center shrink-0">
+                  <Sparkles className="w-4 sm:w-5 h-4 sm:h-5 text-amber-300" />
                 </div>
               </div>
 
@@ -641,7 +641,7 @@ export default function RegistrationSection({ onBackToHero }) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="glass-panel max-w-lg w-full rounded-2xl p-6 sm:p-8 text-center relative border border-amber-400/40 shadow-[0_0_60px_rgba(245,208,97,0.3)] my-8"
+              className="glass-panel max-w-lg w-full max-h-[92vh] overflow-y-auto rounded-2xl p-4 sm:p-7 md:p-8 text-center relative border border-amber-400/40 shadow-[0_0_60px_rgba(245,208,97,0.3)] my-auto"
             >
               {/* Close Button */}
               <button

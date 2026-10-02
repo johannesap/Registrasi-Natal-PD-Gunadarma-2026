@@ -99,13 +99,13 @@ export default function HeroSection({
             delay: 1.8,
             ease: [0.16, 1, 0.3, 1],
           }}
-          className="relative"
+          className="relative px-2"
         >
           <h1
-            className="text-6xl sm:text-8xl md:text-9xl lg:text-[10.5rem] font-extrabold tracking-wider font-['Cinzel'] leading-none text-gold-gradient text-gold-glow uppercase py-1 select-none"
+            className="text-5xl sm:text-7xl md:text-8xl lg:text-[10rem] font-extrabold tracking-wide sm:tracking-wider font-['Cinzel'] leading-none text-gold-gradient text-gold-glow uppercase py-1 select-none"
             style={{
               textShadow:
-                '0 0 30px rgba(254, 240, 138, 0.5), 0 0 70px rgba(234, 179, 8, 0.3), 0 0 100px rgba(202, 138, 4, 0.2)',
+                '0 0 25px rgba(254, 240, 138, 0.45), 0 0 60px rgba(234, 179, 8, 0.28), 0 0 90px rgba(202, 138, 4, 0.18)',
             }}
           >
             NATAL
@@ -116,7 +116,7 @@ export default function HeroSection({
             initial={{ scaleX: 0, opacity: 0 }}
             animate={{ scaleX: 1, opacity: 0.8 }}
             transition={{ duration: 1.4, delay: 2.3, ease: 'easeOut' }}
-            className="h-[1.5px] w-48 sm:w-80 mx-auto mt-2 bg-gradient-to-r from-transparent via-amber-300 to-transparent"
+            className="h-[1.5px] w-32 sm:w-60 md:w-80 mx-auto mt-2 bg-gradient-to-r from-transparent via-amber-300 to-transparent"
           />
         </motion.div>
 
@@ -130,7 +130,7 @@ export default function HeroSection({
             delay: 2.5,
             ease: [0.16, 1, 0.3, 1],
           }}
-          className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold tracking-[0.2em] uppercase text-white font-['Cinzel'] mt-3 sm:mt-4 text-white-glow"
+          className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-semibold tracking-[0.14em] sm:tracking-[0.2em] uppercase text-white font-['Cinzel'] mt-2.5 sm:mt-4 text-white-glow px-2"
         >
           PERSEKUTUAN DOA
         </motion.h2>
@@ -145,7 +145,7 @@ export default function HeroSection({
             delay: 2.9,
             ease: [0.16, 1, 0.3, 1],
           }}
-          className="text-xs sm:text-sm md:text-base font-light text-amber-100/80 uppercase font-sans mt-2 tracking-[0.35em]"
+          className="text-[11px] sm:text-xs md:text-sm lg:text-base font-light text-amber-100/80 uppercase font-sans mt-1.5 sm:mt-2 tracking-[0.22em] sm:tracking-[0.35em] px-2"
         >
           UNIVERSITAS GUNADARMA
         </motion.p>
@@ -160,12 +160,12 @@ export default function HeroSection({
             delay: 3.4,
             ease: [0.16, 1, 0.3, 1],
           }}
-          className="mt-6 sm:mt-7 max-w-xl mx-auto px-4"
+          className="mt-5 sm:mt-7 max-w-xl mx-auto px-4"
         >
-          <p className="text-base sm:text-lg md:text-xl font-['Cormorant_Garamond'] italic font-normal tracking-wide text-amber-200/90 leading-relaxed">
+          <p className="text-sm sm:text-base md:text-lg lg:text-xl font-['Cormorant_Garamond'] italic font-normal tracking-wide text-amber-200/90 leading-relaxed">
             &ldquo;Merayakan Kasih, Menyalakan Harapan&rdquo;
           </p>
-          <p className="text-[11px] sm:text-xs text-gray-400 font-light mt-1 tracking-wider">
+          <p className="text-[10px] sm:text-xs text-gray-400 font-light mt-1 tracking-normal sm:tracking-wider">
             &ldquo;Terang itu bercahaya di dalam kegelapan dan kegelapan itu tidak menguasainya.&rdquo; — Yohanes 1:5
           </p>
         </motion.div>
@@ -180,33 +180,33 @@ export default function HeroSection({
             delay: 3.9,
             ease: [0.16, 1, 0.3, 1],
           }}
-          className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 w-full"
+          className="mt-7 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 w-full px-4"
         >
           <button
             onClick={handleStartRegistration}
             type="button"
-            className="gold-btn group px-8 sm:px-11 py-4 sm:py-4.5 rounded-full font-sans font-semibold text-neutral-950 text-sm sm:text-base tracking-widest uppercase cursor-pointer flex items-center justify-center gap-3 shadow-[0_0_30px_rgba(245,208,97,0.45)] hover:shadow-[0_0_50px_rgba(245,208,97,0.8)]"
+            className="gold-btn group w-full max-w-xs sm:max-w-none sm:w-auto px-7 sm:px-11 py-3.5 sm:py-4.5 rounded-full font-sans font-semibold text-neutral-950 text-xs sm:text-base tracking-widest uppercase cursor-pointer flex items-center justify-center gap-2.5 sm:gap-3 shadow-[0_0_30px_rgba(245,208,97,0.45)] hover:shadow-[0_0_50px_rgba(245,208,97,0.8)]"
           >
-            <Sparkles className="w-4 h-4 text-amber-950 transition-transform group-hover:rotate-45" />
+            <Sparkles className="w-4 h-4 text-amber-950 transition-transform group-hover:rotate-45 shrink-0" />
             <span>MULAI REGISTRASI</span>
-            <span className="w-2 h-2 rounded-full bg-amber-950/70 group-hover:scale-150 transition-transform" />
+            <span className="w-2 h-2 rounded-full bg-amber-950/70 group-hover:scale-150 transition-transform shrink-0" />
           </button>
         </motion.div>
 
-        {/* Quick Event Metadata (Gives authentic official university atmosphere) */}
+        {/* Quick Event Metadata */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1.2, delay: 4.2 }}
-          className="mt-7 flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-xs text-gray-400/90 tracking-wider font-light"
+          className="mt-6 sm:mt-7 flex flex-wrap items-center justify-center gap-3 sm:gap-8 text-[11px] sm:text-xs text-gray-400/90 tracking-wider font-light px-2"
         >
           <div className="flex items-center gap-1.5">
-            <Calendar className="w-3.5 h-3.5 text-amber-300/80" />
+            <Calendar className="w-3.5 h-3.5 text-amber-300/80 shrink-0" />
             <span>Desember 2026</span>
           </div>
           <div className="hidden sm:inline w-1 h-1 rounded-full bg-amber-400/40" />
           <div className="flex items-center gap-1.5">
-            <MapPin className="w-3.5 h-3.5 text-amber-300/80" />
+            <MapPin className="w-3.5 h-3.5 text-amber-300/80 shrink-0" />
             <span>Auditorium Universitas Gunadarma</span>
           </div>
         </motion.div>
