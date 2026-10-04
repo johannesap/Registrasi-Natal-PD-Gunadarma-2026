@@ -6,7 +6,6 @@ import HeroSection from "./components/HeroSection";
 import RegistrationSection from "./components/RegistrationSection";
 import AdminPortal from "./components/AdminPortal";
 import Footer from "./components/Footer";
-import OpeningWelcomeGate from "./components/OpeningWelcomeGate";
 import audioManager from "./utils/audioManager";
 
 export default function App() {
@@ -16,7 +15,6 @@ export default function App() {
     return "hero";
   });
   const [openingKey, setOpeningKey] = useState(0);
-  const [showGate, setShowGate] = useState(false);
 
   // Sync with browser URL hash
   useEffect(() => {
@@ -35,42 +33,10 @@ export default function App() {
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
 
-  // Autoplay attempt on initial web open
+  // Immediate autoplay on opening web
   useEffect(() => {
-    let isMounted = true;
-
-    // Attempt instant unmuted autoplay
-    audioManager.attemptAutoplay().then((allowed) => {
-      if (!isMounted) return;
-      if (!allowed && currentPage === "hero") {
-        // Browser blocked unmuted autoplay without user gesture.
-        // Show festive welcome gate so the opening animation starts WITH music.
-        setShowGate(true);
-      }
-    });
-
-    // Fallback: the very first touch/click anywhere on screen also unlocks audio
-    const unlockOnGesture = () => {
-      if (!audioManager.isPlaying) {
-        audioManager.play();
-        setShowGate(false);
-      }
-    };
-
-    window.addEventListener("pointerdown", unlockOnGesture, { once: true, capture: true });
-
-    return () => {
-      isMounted = false;
-      window.removeEventListener("pointerdown", unlockOnGesture, { capture: true });
-    };
+    audioManager.attemptAutoplay();
   }, []);
-
-  const handleOpenGate = async () => {
-    setShowGate(false);
-    await audioManager.play();
-    // Restart opening animation synchronized with audio start
-    setOpeningKey((prev) => prev + 1);
-  };
 
   const navigateTo = (page) => {
     if (page === "admin") {
@@ -129,7 +95,7 @@ export default function App() {
       {/* 4. MULTI-PAGE ROUTER WITH CINEMATIC TRANSITIONS */}
       <main className="relative z-20 flex-1 flex flex-col justify-center">
         <AnimatePresence mode="wait">
-          {currentPage === "hero" && !showGate && (
+          {currentPage === "hero" && (
             <motion.div
               key={`page-hero-${openingKey}`}
               initial={{ opacity: 0 }}
@@ -170,14 +136,7 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      {/* 5. OPENING WELCOME GATE (Ensures music plays from start of entrance animation) */}
-      <AnimatePresence>
-        {showGate && currentPage === "hero" && (
-          <OpeningWelcomeGate onOpen={handleOpenGate} />
-        )}
-      </AnimatePresence>
-
-      {/* 6. OFFICIAL FOOTER */}
+      {/* 5. OFFICIAL FOOTER */}
       <Footer onNavigate={navigateTo} />
     </div>
   );
