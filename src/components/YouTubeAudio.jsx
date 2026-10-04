@@ -1,77 +1,20 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Music, Volume2, VolumeX } from 'lucide-react';
-
-const AUDIO_SRC_MP3 = '/audio/jingle-bells.mp3';
-const AUDIO_SRC_OGG = '/audio/jingle-bells.ogg';
+import React, { useState, useEffect } from 'react';
+import { Music } from 'lucide-react';
+import audioManager from '../utils/audioManager';
 
 export default function YouTubeAudio() {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const audioRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(audioManager.isPlaying);
 
-  // Initialize native HTML5 Audio element for pure, crisp audio playback
   useEffect(() => {
-    const audio = new Audio();
-    audio.src = AUDIO_SRC_MP3;
-    audio.loop = true;
-    audio.volume = 0.8;
-    audio.preload = 'auto';
-
-    audio.addEventListener('play', () => setIsPlaying(true));
-    audio.addEventListener('pause', () => setIsPlaying(false));
-    audio.addEventListener('ended', () => {
-      audio.currentTime = 0;
-      audio.play().catch(() => {});
+    // Subscribe to global audio manager state
+    const unsubscribe = audioManager.subscribe((playing) => {
+      setIsPlaying(playing);
     });
-
-    audioRef.current = audio;
-
-    return () => {
-      audio.pause();
-      audio.src = '';
-    };
+    return unsubscribe;
   }, []);
 
-  // Listen for auto-trigger event (e.g. when user clicks "MULAI REGISTRASI")
-  useEffect(() => {
-    const handleTriggerAudio = () => {
-      const audio = audioRef.current;
-      if (audio && !isPlaying) {
-        audio
-          .play()
-          .then(() => setIsPlaying(true))
-          .catch(() => {});
-      }
-    };
-
-    window.addEventListener('start-christmas-audio', handleTriggerAudio);
-    return () => {
-      window.removeEventListener('start-christmas-audio', handleTriggerAudio);
-    };
-  }, [isPlaying]);
-
-  // Toggle Play / Pause
   const handleTogglePlay = async () => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    if (isPlaying) {
-      audio.pause();
-      setIsPlaying(false);
-    } else {
-      try {
-        await audio.play();
-        setIsPlaying(true);
-      } catch {
-        // Fallback to ogg format if browser prefers it
-        try {
-          audio.src = AUDIO_SRC_OGG;
-          await audio.play();
-          setIsPlaying(true);
-        } catch (err) {
-          console.error('Audio playback error:', err);
-        }
-      }
-    }
+    await audioManager.toggle();
   };
 
   return (
@@ -83,7 +26,7 @@ export default function YouTubeAudio() {
           ? 'bg-gradient-to-r from-amber-500/30 via-red-500/20 to-amber-600/30 border-amber-400 text-amber-200 shadow-[0_0_20px_rgba(245,208,97,0.45)]'
           : 'bg-white/10 hover:bg-white/15 border-amber-400/30 text-amber-100 hover:border-amber-400/60 shadow-[0_0_12px_rgba(245,208,97,0.15)] animate-pulse'
       }`}
-      title={isPlaying ? 'Jeda Musik Natal' : 'Putar Musik Natal (Jingle Bells)'}
+      title={isPlaying ? 'Jeda Musik Natal (Jingle Bells)' : 'Putar Musik Natal (Jingle Bells)'}
       aria-label={isPlaying ? 'Jeda Musik Natal' : 'Putar Musik Natal'}
     >
       {isPlaying ? (

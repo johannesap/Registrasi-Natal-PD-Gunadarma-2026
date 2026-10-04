@@ -7,105 +7,121 @@ export default function ChristmasNightCanvas() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: true });
     let animationFrameId;
-    let width = (canvas.width = window.innerWidth);
-    let height = (canvas.height = window.innerHeight);
 
-    const isMobile = window.innerWidth < 768;
-    const snowCount = isMobile ? 45 : 110;
-    const starCount = isMobile ? 70 : 160;
-    const dustCount = isMobile ? 35 : 75;
+    let width = window.innerWidth;
+    let height = window.innerHeight;
 
-    // Handle high DPI
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
+    const isMobile = width < 768;
+
+    // Mobile performance tuning:
+    // Cap devicePixelRatio to 1.25 on mobile to avoid 4.5M pixel fill rate choking mobile GPU
+    const dpr = isMobile
+      ? Math.min(window.devicePixelRatio || 1, 1.25)
+      : Math.min(window.devicePixelRatio || 1, 1.75);
+
+    canvas.width = Math.floor(width * dpr);
+    canvas.height = Math.floor(height * dpr);
     ctx.scale(dpr, dpr);
 
-    // Initialize Stars
+    // Reduced particle counts tailored for buttery smooth 60fps on mobile
+    const snowCount = isMobile ? 24 : 70;
+    const starCount = isMobile ? 40 : 120;
+    const dustCount = isMobile ? 14 : 45;
+
+    // =========================================================================
+    // GPU SPRITE CACHE: Pre-render glow gradients ONCE on tiny offscreen canvases
+    // Replaces hundreds of runtime ctx.createRadialGradient() calls per frame!
+    // =========================================================================
+    const emberSprite = document.createElement('canvas');
+    emberSprite.width = 32;
+    emberSprite.height = 32;
+    const eCtx = emberSprite.getContext('2d');
+    const eGrad = eCtx.createRadialGradient(16, 16, 0, 16, 16, 16);
+    eGrad.addColorStop(0, 'rgba(255, 245, 180, 0.95)');
+    eGrad.addColorStop(0.35, 'rgba(245, 208, 97, 0.45)');
+    eGrad.addColorStop(1, 'rgba(234, 179, 8, 0)');
+    eCtx.fillStyle = eGrad;
+    eCtx.beginPath();
+    eCtx.arc(16, 16, 16, 0, Math.PI * 2);
+    eCtx.fill();
+
+    const snowSprite = document.createElement('canvas');
+    snowSprite.width = 24;
+    snowSprite.height = 24;
+    const sCtx = snowSprite.getContext('2d');
+    const sGrad = sCtx.createRadialGradient(12, 12, 0, 12, 12, 12);
+    sGrad.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+    sGrad.addColorStop(0.5, 'rgba(220, 240, 255, 0.35)');
+    sGrad.addColorStop(1, 'rgba(200, 225, 255, 0)');
+    sCtx.fillStyle = sGrad;
+    sCtx.beginPath();
+    sCtx.arc(12, 12, 12, 0, Math.PI * 2);
+    sCtx.fill();
+
+    // 1. Initialize Stars
     const stars = Array.from({ length: starCount }, () => ({
       x: Math.random() * width,
       y: Math.random() * height,
-      size: Math.random() * 1.5 + 0.4,
-      alpha: Math.random() * 0.7 + 0.2,
-      baseAlpha: Math.random() * 0.6 + 0.2,
-      twinkleSpeed: Math.random() * 0.02 + 0.005,
+      size: Math.random() * 1.3 + 0.4,
+      baseAlpha: Math.random() * 0.5 + 0.25,
+      twinkleSpeed: Math.random() * 0.02 + 0.006,
       phase: Math.random() * Math.PI * 2,
-      color: Math.random() > 0.4 ? '#ffffff' : Math.random() > 0.5 ? '#fde047' : '#93c5fd',
     }));
 
-    // Initialize Snowflakes with depth (z: 1 to 3)
+    // 2. Initialize Snowflakes
     const snowflakes = Array.from({ length: snowCount }, () => {
-      const z = Math.random() * 2 + 1; // 1 = far, 3 = near
+      const isSoft = Math.random() > 0.65;
       return {
         x: Math.random() * width,
         y: Math.random() * height,
-        z,
-        radius: (Math.random() * 1.8 + 0.8) * (z / 2),
-        speedY: (Math.random() * 0.7 + 0.4) * (z / 1.5),
-        speedX: Math.random() * 0.4 - 0.2,
-        swaySpeed: Math.random() * 0.015 + 0.005,
-        swayRange: Math.random() * 25 + 10,
+        isSoft,
+        radius: isSoft ? Math.random() * 2.2 + 1.2 : Math.random() * 1.4 + 0.7,
+        speedY: Math.random() * 0.65 + 0.35,
+        speedX: Math.random() * 0.3 - 0.15,
+        swaySpeed: Math.random() * 0.012 + 0.004,
         swayPhase: Math.random() * Math.PI * 2,
-        opacity: (Math.random() * 0.5 + 0.25) * (z / 2.5),
+        opacity: Math.random() * 0.4 + 0.35,
       };
     });
 
-    // Initialize Golden Dust Particles (glowing floating embers)
+    // 3. Initialize Golden Dust
     const goldenDust = Array.from({ length: dustCount }, () => ({
       x: Math.random() * width,
       y: Math.random() * height,
-      radius: Math.random() * 2 + 0.8,
-      speedY: -(Math.random() * 0.35 + 0.1), // gently rising
-      speedX: Math.random() * 0.3 - 0.15,
-      alpha: Math.random() * 0.6 + 0.2,
-      pulseSpeed: Math.random() * 0.03 + 0.01,
+      radius: Math.random() * 3.5 + 2.5,
+      speedY: -(Math.random() * 0.3 + 0.1),
+      speedX: Math.random() * 0.25 - 0.12,
       phase: Math.random() * Math.PI * 2,
-      glow: Math.random() * 8 + 4,
+      pulseSpeed: Math.random() * 0.025 + 0.008,
+      alpha: Math.random() * 0.5 + 0.3,
     }));
 
-    let time = 0;
-
     const render = () => {
-      time += 1;
       ctx.clearRect(0, 0, width, height);
 
-      // 1. Draw Twinkling Stars (No mouse movement shift)
+      // --- A. BATCH DRAW STARS (Single Path Call for Maximum Performance) ---
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
       for (let i = 0; i < stars.length; i++) {
         const s = stars[i];
         s.phase += s.twinkleSpeed;
-        const currentAlpha = s.baseAlpha + Math.sin(s.phase) * 0.3;
-        const clampedAlpha = Math.max(0.1, Math.min(1, currentAlpha));
-
-        const posX = (s.x + width) % width;
-        const posY = (s.y + height) % height;
-
-        ctx.fillStyle = s.color;
-        ctx.globalAlpha = clampedAlpha;
-        ctx.beginPath();
-        ctx.arc(posX, posY, s.size, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Extra twinkle rays for brightest stars
-        if (s.size > 1.4 && clampedAlpha > 0.6) {
-          ctx.strokeStyle = s.color;
-          ctx.lineWidth = 0.5;
-          ctx.beginPath();
-          ctx.moveTo(posX - s.size * 2, posY);
-          ctx.lineTo(posX + s.size * 2, posY);
-          ctx.moveTo(posX, posY - s.size * 2);
-          ctx.lineTo(posX, posY + s.size * 2);
-          ctx.stroke();
+        const currentAlpha = s.baseAlpha + Math.sin(s.phase) * 0.25;
+        if (currentAlpha > 0.15) {
+          ctx.moveTo(s.x + s.size, s.y);
+          ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
         }
       }
+      ctx.globalAlpha = 0.85;
+      ctx.fill();
 
-      // 2. Draw Golden Stardust / Embers (No mouse movement shift)
+      // --- B. DRAW GOLDEN EMBERS VIA PRE-RENDERED GPU SPRITE (Blazing Fast) ---
       for (let i = 0; i < goldenDust.length; i++) {
         const p = goldenDust[i];
         p.phase += p.pulseSpeed;
         p.y += p.speedY;
-        p.x += p.speedX + Math.sin(p.phase * 0.5) * 0.2;
+        p.x += p.speedX + Math.sin(p.phase * 0.5) * 0.15;
 
         if (p.y < -20) {
           p.y = height + 10;
@@ -114,71 +130,46 @@ export default function ChristmasNightCanvas() {
         if (p.x < 0) p.x = width;
         if (p.x > width) p.x = 0;
 
-        const currentAlpha = p.alpha * (0.6 + 0.4 * Math.sin(p.phase));
-        const posX = p.x;
-        const posY = p.y;
-
-        // Glowing core
-        ctx.save();
-        ctx.globalAlpha = Math.max(0, Math.min(1, currentAlpha));
-        const gradient = ctx.createRadialGradient(posX, posY, 0, posX, posY, p.glow);
-        gradient.addColorStop(0, 'rgba(255, 245, 180, 0.9)');
-        gradient.addColorStop(0.3, 'rgba(245, 208, 97, 0.4)');
-        gradient.addColorStop(1, 'rgba(234, 179, 8, 0)');
-
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.arc(posX, posY, p.glow, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Sharp bright center
-        ctx.fillStyle = '#fffdf0';
-        ctx.beginPath();
-        ctx.arc(posX, posY, p.radius * 0.6, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
+        const currentAlpha = p.alpha * (0.65 + 0.35 * Math.sin(p.phase));
+        ctx.globalAlpha = Math.max(0.1, Math.min(1, currentAlpha));
+        const r = p.radius;
+        ctx.drawImage(emberSprite, p.x - r, p.y - r, r * 2, r * 2);
       }
 
-      // 3. Draw Soft Falling Snow (No mouse movement shift)
+      // --- C. DRAW SNOWFLAKES (Batched crisp snow + Sprited soft snow) ---
+      // 1. Soft foreground snow using sprite
       for (let i = 0; i < snowflakes.length; i++) {
         const flake = snowflakes[i];
         flake.swayPhase += flake.swaySpeed;
         flake.y += flake.speedY;
-        flake.x += flake.speedX + Math.sin(flake.swayPhase) * 0.5;
+        flake.x += flake.speedX + Math.sin(flake.swayPhase) * 0.35;
 
-        // Wrap around borders
-        if (flake.y > height + 10) {
+        if (flake.y > height + 15) {
           flake.y = -10;
           flake.x = Math.random() * width;
         }
-        if (flake.x < -20) flake.x = width + 20;
-        if (flake.x > width + 20) flake.x = -20;
+        if (flake.x < -15) flake.x = width + 15;
+        if (flake.x > width + 15) flake.x = -15;
 
-        const posX = flake.x;
-        const posY = flake.y;
-
-        ctx.save();
-        ctx.globalAlpha = Math.max(0.1, Math.min(0.9, flake.opacity));
-
-        if (flake.z > 2.2) {
-          // Foreground fluffy soft snow
-          const glowGrad = ctx.createRadialGradient(posX, posY, 0, posX, posY, flake.radius * 2);
-          glowGrad.addColorStop(0, 'rgba(255, 255, 255, 0.85)');
-          glowGrad.addColorStop(0.5, 'rgba(235, 245, 255, 0.3)');
-          glowGrad.addColorStop(1, 'rgba(200, 225, 255, 0)');
-          ctx.fillStyle = glowGrad;
-          ctx.beginPath();
-          ctx.arc(posX, posY, flake.radius * 2, 0, Math.PI * 2);
-          ctx.fill();
-        } else {
-          // Mid & background crisp snow
-          ctx.fillStyle = '#ffffff';
-          ctx.beginPath();
-          ctx.arc(posX, posY, flake.radius, 0, Math.PI * 2);
-          ctx.fill();
+        if (flake.isSoft) {
+          ctx.globalAlpha = flake.opacity;
+          const r = flake.radius * 2;
+          ctx.drawImage(snowSprite, flake.x - r, flake.y - r, r * 2, r * 2);
         }
-        ctx.restore();
       }
+
+      // 2. Crisp snowflakes in single batched fill
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      for (let i = 0; i < snowflakes.length; i++) {
+        const flake = snowflakes[i];
+        if (!flake.isSoft) {
+          ctx.moveTo(flake.x + flake.radius, flake.y);
+          ctx.arc(flake.x, flake.y, flake.radius, 0, Math.PI * 2);
+        }
+      }
+      ctx.globalAlpha = 0.75;
+      ctx.fill();
 
       ctx.globalAlpha = 1;
       animationFrameId = requestAnimationFrame(render);
@@ -189,12 +180,12 @@ export default function ChristmasNightCanvas() {
     const handleResize = () => {
       width = window.innerWidth;
       height = window.innerHeight;
-      canvas.width = width * dpr;
-      canvas.height = height * dpr;
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
       ctx.scale(dpr, dpr);
     };
 
-    window.addEventListener('resize', handleResize);
+    window.addEventListener('resize', handleResize, { passive: true });
 
     return () => {
       cancelAnimationFrame(animationFrameId);
@@ -205,7 +196,8 @@ export default function ChristmasNightCanvas() {
   return (
     <canvas
       ref={canvasRef}
-      className="absolute inset-0 pointer-events-none z-10 w-full h-full"
+      className="absolute inset-0 pointer-events-none z-10 w-full h-full transform-gpu"
+      style={{ willChange: 'contents' }}
     />
   );
 }

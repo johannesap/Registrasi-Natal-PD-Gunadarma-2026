@@ -6,6 +6,8 @@ import HeroSection from "./components/HeroSection";
 import RegistrationSection from "./components/RegistrationSection";
 import AdminPortal from "./components/AdminPortal";
 import Footer from "./components/Footer";
+import OpeningWelcomeGate from "./components/OpeningWelcomeGate";
+import audioManager from "./utils/audioManager";
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState(() => {
@@ -14,6 +16,7 @@ export default function App() {
     return "hero";
   });
   const [openingKey, setOpeningKey] = useState(0);
+  const [showGate, setShowGate] = useState(false);
 
   // Sync with browser URL hash
   useEffect(() => {
@@ -32,6 +35,43 @@ export default function App() {
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
 
+  // Autoplay attempt on initial web open
+  useEffect(() => {
+    let isMounted = true;
+
+    // Attempt instant unmuted autoplay
+    audioManager.attemptAutoplay().then((allowed) => {
+      if (!isMounted) return;
+      if (!allowed && currentPage === "hero") {
+        // Browser blocked unmuted autoplay without user gesture.
+        // Show festive welcome gate so the opening animation starts WITH music.
+        setShowGate(true);
+      }
+    });
+
+    // Fallback: the very first touch/click anywhere on screen also unlocks audio
+    const unlockOnGesture = () => {
+      if (!audioManager.isPlaying) {
+        audioManager.play();
+        setShowGate(false);
+      }
+    };
+
+    window.addEventListener("pointerdown", unlockOnGesture, { once: true, capture: true });
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener("pointerdown", unlockOnGesture, { capture: true });
+    };
+  }, []);
+
+  const handleOpenGate = async () => {
+    setShowGate(false);
+    await audioManager.play();
+    // Restart opening animation synchronized with audio start
+    setOpeningKey((prev) => prev + 1);
+  };
+
   const navigateTo = (page) => {
     if (page === "admin") {
       window.location.hash = "#admin";
@@ -49,54 +89,35 @@ export default function App() {
   const handleReplayOpening = () => {
     navigateTo("hero");
     setOpeningKey((prev) => prev + 1);
+    audioManager.restart();
   };
 
   return (
     <div className="relative min-h-screen w-full bg-[#02040a] text-gray-100 overflow-x-hidden selection:bg-amber-400/25 selection:text-amber-200 flex flex-col justify-between">
-      {/* 1. CINEMATIC PERSISTENT BACKGROUND ATMOSPHERE */}
+      {/* 1. CINEMATIC HIGH-PERFORMANCE BACKGROUND (GPU Optimized) */}
       <div className="fixed inset-0 pointer-events-none -z-30 overflow-hidden">
-        {/* Base dark night gradient */}
+        {/* Unified multi-stop night sky gradient - 0% blur overhead, 100% GPU accelerated */}
         <div
           className="absolute inset-0"
           style={{
-            background: "radial-gradient(ellipse at 50% 15%, #071938 0%, #031c15 35%, #1f050e 70%, #02040a 100%)",
+            background:
+              'radial-gradient(ellipse at 50% 12%, rgba(12, 35, 64, 0.75) 0%, rgba(3, 13, 29, 0.85) 45%, #02040a 100%), ' +
+              'radial-gradient(circle at 15% 40%, rgba(6, 61, 46, 0.35) 0%, transparent 50%), ' +
+              'radial-gradient(circle at 85% 55%, rgba(56, 8, 22, 0.3) 0%, transparent 50%), ' +
+              'radial-gradient(circle at 50% 28%, rgba(245, 208, 97, 0.12) 0%, transparent 60%)',
           }}
         />
 
-        {/* Deep Navy Atmosphere (Upper Night Sky) */}
+        {/* Lightweight subtle center warmth on desktop only */}
         <div
-          className="absolute -top-32 left-1/4 w-[600px] h-[500px] rounded-full blur-[130px] opacity-45 pointer-events-none"
+          className="hidden md:block absolute top-24 left-1/2 -translate-x-1/2 w-[550px] h-[380px] rounded-full opacity-25 pointer-events-none blur-3xl transform-gpu"
           style={{
-            background: "radial-gradient(circle, #0c2340 0%, #030d1d 70%, transparent 100%)",
+            background: 'radial-gradient(circle, rgba(254, 243, 199, 0.3) 0%, rgba(245, 208, 97, 0.15) 40%, transparent 70%)',
           }}
         />
 
-        {/* Sacred Dark Pine / Emerald Atmosphere */}
-        <div
-          className="absolute top-1/3 -left-20 w-[550px] h-[550px] rounded-full blur-[140px] opacity-35 pointer-events-none"
-          style={{
-            background: "radial-gradient(circle, #063d2e 0%, #021a13 70%, transparent 100%)",
-          }}
-        />
-
-        {/* Deep Maroon / Burgundy Atmosphere */}
-        <div
-          className="absolute top-1/2 -right-24 w-[600px] h-[600px] rounded-full blur-[140px] opacity-30 pointer-events-none"
-          style={{
-            background: "radial-gradient(circle, #380816 0%, #1a030a 70%, transparent 100%)",
-          }}
-        />
-
-        {/* Center Warm Gold & Warm White Radiance */}
-        <div
-          className="absolute top-40 left-1/2 -translate-x-1/2 w-[700px] h-[500px] rounded-full blur-[120px] opacity-30 pointer-events-none"
-          style={{
-            background: "radial-gradient(circle, rgba(254, 243, 199, 0.25) 0%, rgba(245, 208, 97, 0.15) 30%, rgba(220, 38, 38, 0.08) 60%, transparent 80%)",
-          }}
-        />
-
-        {/* Subtle Vignette Edge Mask */}
-        <div className="absolute inset-0 bg-radial from-transparent via-transparent to-black/60 pointer-events-none" />
+        {/* Subtle Vignette Mask */}
+        <div className="absolute inset-0 bg-radial from-transparent via-transparent to-black/50 pointer-events-none" />
       </div>
 
       {/* 2. 60FPS CANVAS (Stars, Snow, Golden Stardust) */}
@@ -108,7 +129,7 @@ export default function App() {
       {/* 4. MULTI-PAGE ROUTER WITH CINEMATIC TRANSITIONS */}
       <main className="relative z-20 flex-1 flex flex-col justify-center">
         <AnimatePresence mode="wait">
-          {currentPage === "hero" && (
+          {currentPage === "hero" && !showGate && (
             <motion.div
               key={`page-hero-${openingKey}`}
               initial={{ opacity: 0 }}
@@ -149,7 +170,14 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      {/* 5. OFFICIAL FOOTER */}
+      {/* 5. OPENING WELCOME GATE (Ensures music plays from start of entrance animation) */}
+      <AnimatePresence>
+        {showGate && currentPage === "hero" && (
+          <OpeningWelcomeGate onOpen={handleOpenGate} />
+        )}
+      </AnimatePresence>
+
+      {/* 6. OFFICIAL FOOTER */}
       <Footer onNavigate={navigateTo} />
     </div>
   );

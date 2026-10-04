@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "laravel": "cd backend && php artisan serve --port=8000",
     "server": "node server/index.js",
     "build": "vite build",
     "lint": "oxlint",

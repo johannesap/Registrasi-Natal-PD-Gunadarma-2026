@@ -258,6 +258,41 @@ export const isAdminAuthenticated = () => {
 };
 
 export const loginAdmin = async (username, password) => {
+  const cleanUser = (username || '').trim().toLowerCase();
+  const cleanPass = (password || '').trim();
+
+  const validUser = 'admin';
+  const validPass = 'natal2026';
+
+  // 1. Direct validation against official credentials
+  // Ensures admin can ALWAYS log in on Vercel, localhost, or any deployment
+  if (cleanUser === validUser && cleanPass === validPass) {
+    localStorage.setItem(AUTH_KEY, 'true');
+
+    // Optional background sync with backend server if online
+    try {
+      const res = await fetch(`${API_BASE}/admin/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({ username: cleanUser, password: cleanPass }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.token) {
+          localStorage.setItem(AUTH_TOKEN_KEY, data.token);
+        }
+      }
+    } catch {
+      // Standalone/Vercel fallback - completely fine
+    }
+
+    return { success: true };
+  }
+
+  // 2. If custom credentials, query backend API
   try {
     const res = await fetch(`${API_BASE}/admin/login`, {
       method: 'POST',
@@ -265,7 +300,7 @@ export const loginAdmin = async (username, password) => {
         'Content-Type': 'application/json',
         Accept: 'application/json',
       },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ username: cleanUser, password: cleanPass }),
     });
 
     if (res.ok) {
@@ -277,27 +312,9 @@ export const loginAdmin = async (username, password) => {
         }
         return { success: true };
       }
-    } else {
-      const err = await res.json().catch(() => ({}));
-      return {
-        success: false,
-        message: err.message || 'Username atau kata sandi admin salah. Silakan coba lagi.',
-      };
     }
   } catch (error) {
-    console.warn('[API] Server offline during login, checking local credentials:', error);
-  }
-
-  // Fallback credentials
-  const validUser = 'admin';
-  const validPass = 'natal2026';
-
-  if (
-    username.trim().toLowerCase() === validUser &&
-    password.trim() === validPass
-  ) {
-    localStorage.setItem(AUTH_KEY, 'true');
-    return { success: true };
+    console.warn('[API] Server unreachable during login:', error);
   }
 
   return {
