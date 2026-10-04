@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, RotateCcw, Ticket, Home, ArrowLeft } from 'lucide-react';
+import { Sparkles, RotateCcw } from 'lucide-react';
 import YouTubeAudio from './YouTubeAudio';
 
 export default function Navbar({
@@ -48,20 +48,8 @@ export default function Navbar({
             <span className="hidden md:inline">Ulang Opening</span>
           </button>
 
-          {/* YouTube background music */}
+          {/* Background music */}
           <YouTubeAudio />
-
-          {/* Return to Home button when on registration or admin page */}
-          {(currentPage === 'registration' || currentPage === 'admin') && (
-            <button
-              onClick={() => onNavigate('hero')}
-              type="button"
-              className="flex items-center gap-1 sm:gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-full text-xs font-semibold text-amber-200 bg-white/5 border border-amber-400/30 hover:bg-white/10 hover:border-amber-400/60 transition-all duration-300 cursor-pointer"
-            >
-              <ArrowLeft className="w-3.5 h-3.5 text-amber-300 shrink-0" />
-              <span className="whitespace-nowrap">Halaman Utama</span>
-            </button>
-          )}
         </div>
       </div>
     </header>

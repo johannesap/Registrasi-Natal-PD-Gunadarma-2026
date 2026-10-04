@@ -23,6 +23,7 @@ class ChristmasAudioManager {
     } else {
       this.audio = new Audio();
       this.audio.src = AUDIO_SRC_MP3;
+      document.body.appendChild(this.audio);
     }
 
     this.audio.loop = true;
@@ -56,6 +57,17 @@ class ChristmasAudioManager {
       }
     });
 
+    // Try playing once enough data is ready
+    this.audio.addEventListener('canplay', () => {
+      if (!this.isPlaying && !this.hasUnlocked) {
+        this.audio.play().then(() => {
+          this.isPlaying = true;
+          this.hasUnlocked = true;
+          this.notify();
+        }).catch(() => {});
+      }
+    });
+
     this.isInitialized = true;
   }
 
@@ -64,6 +76,9 @@ class ChristmasAudioManager {
     this.init();
     if (!this.audio) return false;
 
+    // Pre-arm interaction unlock listener immediately
+    this.setupFirstInteractionUnlock();
+
     try {
       await this.audio.play();
       this.isPlaying = true;
@@ -71,9 +86,8 @@ class ChristmasAudioManager {
       this.notify();
       return true;
     } catch {
-      // Browser blocked unmuted autoplay without user gesture.
-      // Listen for the very first micro-interaction anywhere on the screen
-      this.setupFirstInteractionUnlock();
+      // Browser blocked unmuted autoplay.
+      // The interaction listeners are waiting and will fire automatically on the first screen tap/scroll!
       return false;
     }
   }
@@ -81,35 +95,35 @@ class ChristmasAudioManager {
   setupFirstInteractionUnlock() {
     if (this.hasUnlocked || typeof window === 'undefined') return;
 
-    const unlock = () => {
-      if (this.audio && this.audio.paused) {
-        this.audio
-          .play()
-          .then(() => {
-            this.isPlaying = true;
-            this.hasUnlocked = true;
-            this.notify();
-          })
-          .catch(() => {});
+    const tryUnlock = async () => {
+      if (this.hasUnlocked || !this.audio) return;
+
+      try {
+        await this.audio.play();
+        this.isPlaying = true;
+        this.hasUnlocked = true;
+        this.notify();
+        cleanup();
+      } catch (err) {
+        // If this specific event (e.g. pointerdown) was not accepted by browser policy,
+        // DO NOT cleanup! Let the subsequent touchend or click in the tap sequence try.
       }
-      cleanup();
     };
 
     const cleanup = () => {
-      window.removeEventListener('pointerdown', unlock, true);
-      window.removeEventListener('touchstart', unlock, true);
-      window.removeEventListener('touchend', unlock, true);
-      window.removeEventListener('click', unlock, true);
-      window.removeEventListener('scroll', unlock, true);
-      window.removeEventListener('keydown', unlock, true);
+      const events = ['click', 'touchend', 'pointerup', 'pointerdown', 'touchstart', 'scroll', 'keydown'];
+      events.forEach((evt) => {
+        window.removeEventListener(evt, tryUnlock, true);
+        document.removeEventListener(evt, tryUnlock, true);
+      });
     };
 
-    window.addEventListener('pointerdown', unlock, { capture: true, once: true });
-    window.addEventListener('touchstart', unlock, { capture: true, once: true });
-    window.addEventListener('touchend', unlock, { capture: true, once: true });
-    window.addEventListener('click', unlock, { capture: true, once: true });
-    window.addEventListener('scroll', unlock, { capture: true, once: true });
-    window.addEventListener('keydown', unlock, { capture: true, once: true });
+    // Listen on both window and document to catch ANY screen touch or gesture
+    const events = ['click', 'touchend', 'pointerup', 'pointerdown', 'touchstart', 'scroll', 'keydown'];
+    events.forEach((evt) => {
+      window.addEventListener(evt, tryUnlock, { capture: true, passive: true });
+      document.addEventListener(evt, tryUnlock, { capture: true, passive: true });
+    });
   }
 
   // Play audio directly
