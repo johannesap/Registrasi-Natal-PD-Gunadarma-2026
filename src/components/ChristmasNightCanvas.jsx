@@ -16,10 +16,10 @@ export default function ChristmasNightCanvas() {
     const isMobile = width < 768;
 
     // Mobile performance tuning:
-    // Cap devicePixelRatio to 1.25 on mobile to avoid 4.5M pixel fill rate choking mobile GPU
+    // Cap devicePixelRatio to 1.0 on mobile to avoid fill rate choking mobile GPU
     const dpr = isMobile
-      ? Math.min(window.devicePixelRatio || 1, 1.25)
-      : Math.min(window.devicePixelRatio || 1, 1.75);
+      ? 1
+      : Math.min(window.devicePixelRatio || 1, 1.5);
 
     canvas.width = Math.floor(width * dpr);
     canvas.height = Math.floor(height * dpr);

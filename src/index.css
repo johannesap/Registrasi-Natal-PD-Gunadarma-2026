@@ -126,6 +126,20 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+@media (max-width: 768px) {
+  .glass-panel {
+    background: rgba(8, 15, 30, 0.94);
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+  }
+  .glass-panel-subtle {
+    background: rgba(10, 20, 38, 0.92);
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
 /* Gold Button Glow */
 .gold-btn {
   background: linear-gradient(135deg, #ffe17d 0%, #e5b323 50%, #b8860b 100%);

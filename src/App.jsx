@@ -100,9 +100,10 @@ export default function App() {
               key={`page-hero-${openingKey}`}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              exit={{ opacity: 0, scale: 0.98, filter: "blur(6px)" }}
-              transition={{ duration: 0.5, ease: "easeInOut" }}
-              className="w-full"
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+              className="w-full transform-gpu"
+              style={{ willChange: "transform, opacity" }}
             >
               <HeroSection key={openingKey} openingKey={openingKey} onStartRegistration={() => navigateTo("registration")} />
             </motion.div>
@@ -111,11 +112,12 @@ export default function App() {
           {currentPage === "registration" && (
             <motion.div
               key="page-registration"
-              initial={{ opacity: 0, y: 25, filter: "blur(8px)" }}
-              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-              exit={{ opacity: 0, y: -20, filter: "blur(6px)" }}
-              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full pt-16"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full pt-16 transform-gpu"
+              style={{ willChange: "transform, opacity" }}
             >
               <RegistrationSection onBackToHero={() => navigateTo("hero")} />
             </motion.div>
@@ -124,11 +126,12 @@ export default function App() {
           {currentPage === "admin" && (
             <motion.div
               key="page-admin"
-              initial={{ opacity: 0, y: 25, filter: "blur(8px)" }}
-              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-              exit={{ opacity: 0, y: -20, filter: "blur(6px)" }}
-              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full pt-16"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full pt-16 transform-gpu"
+              style={{ willChange: "transform, opacity" }}
             >
               <AdminPortal onBackToHome={() => navigateTo("hero")} />
             </motion.div>

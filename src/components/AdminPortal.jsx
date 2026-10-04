@@ -208,150 +208,158 @@ export default function AdminPortal({ onBackToHome }) {
     };
   }, [registrations]);
 
-  // 1. IF NOT LOGGED IN: SHOW ADMIN LOGIN CARD
-  if (!isAuthenticated) {
-    return (
-      <section className="relative min-h-[90vh] w-full flex items-center justify-center px-4 py-20 z-20">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="glass-panel max-w-md w-full rounded-2xl p-6 sm:p-9 relative overflow-hidden border border-amber-400/30 shadow-[0_20px_50px_rgba(0,0,0,0.8)]"
-        >
-          {/* Top Gold Ribbon */}
-          <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-amber-500/20 via-amber-400 to-amber-500/20" />
-
-          {/* Back Button */}
-          <button
-            onClick={onBackToHome}
-            type="button"
-            className="inline-flex items-center gap-1.5 text-xs text-amber-200/80 hover:text-white mb-6 transition-colors cursor-pointer"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Kembali ke Halaman Utama</span>
-          </button>
-
-          {/* Header */}
-          <div className="text-center mb-6">
-            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-400/20 via-amber-500/10 to-transparent border border-amber-400/30 flex items-center justify-center mx-auto mb-3 shadow-[0_0_20px_rgba(245,208,97,0.25)]">
-              <ShieldCheck className="w-7 h-7 text-amber-300" />
-            </div>
-            <span className="text-[11px] font-semibold tracking-[0.25em] uppercase text-amber-300 block mb-1">
-              PORTAL KHUSUS PANITIA
-            </span>
-            <h2 className="text-2xl font-bold font-['Cinzel'] text-gold-gradient uppercase tracking-wider">
-              LOGIN ADMIN NATAL 2026
-            </h2>
-            <p className="text-xs text-gray-400 font-light mt-1">
-              Persekutuan Doa Universitas Gunadarma
-            </p>
-          </div>
-
-          {/* Error Message */}
-          {loginError && (
-            <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="p-3 rounded-xl bg-rose-950/40 border border-rose-500/40 text-rose-200 text-xs flex items-center gap-2 mb-4"
-            >
-              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
-              <span>{loginError}</span>
-            </motion.div>
-          )}
-
-          {/* Login Form */}
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5">
-                Username Admin
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-                  <User className="w-4 h-4 text-amber-300/70" />
-                </div>
-                <input
-                  type="text"
-                  required
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Masukkan username admin"
-                  className="w-full pl-10 pr-4 py-3 bg-neutral-900/80 border border-white/10 rounded-xl text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5">
-                Password
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-                  <KeyRound className="w-4 h-4 text-amber-300/70" />
-                </div>
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Masukkan kata sandi"
-                  className="w-full pl-10 pr-4 py-3 bg-neutral-900/80 border border-white/10 rounded-xl text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoggingIn}
-              className="gold-btn w-full py-3.5 rounded-xl font-semibold text-neutral-950 text-xs tracking-widest uppercase cursor-pointer flex items-center justify-center gap-2 mt-2 shadow-[0_0_20px_rgba(245,208,97,0.3)]"
-            >
-              {isLoggingIn ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin text-neutral-950" />
-                  <span>MEMVERIFIKASI...</span>
-                </>
-              ) : (
-                <>
-                  <Lock className="w-4 h-4 text-neutral-950" />
-                  <span>MASUK SEBAGAI ADMIN</span>
-                </>
-              )}
-            </button>
-          </form>
-
-          {/* Quick Demo Credentials Info */}
-          <div className="mt-6 p-3.5 rounded-xl bg-amber-950/20 border border-amber-400/20 text-xs text-gray-300 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-amber-300 flex items-center gap-1.5">
-                <HelpCircle className="w-3.5 h-3.5" />
-                Akun Demo Panitia:
-              </span>
-              <button
-                type="button"
-                onClick={handleFillDemo}
-                className="text-[11px] text-amber-300 underline hover:text-white cursor-pointer"
-              >
-                Isi Otomatis
-              </button>
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-[11px] font-mono bg-black/40 p-2 rounded-lg border border-white/5">
-              <div>
-                <span className="text-gray-400 block text-[10px]">User:</span>
-                <span className="text-amber-200">admin</span>
-              </div>
-              <div>
-                <span className="text-gray-400 block text-[10px]">Pass:</span>
-                <span className="text-amber-200">natal2026</span>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </section>
-    );
-  }
-
-  // 2. IF LOGGED IN: SHOW FULL ADMIN DASHBOARD
   return (
-    <section className="relative min-h-screen w-full py-12 sm:py-20 px-3 sm:px-6 lg:px-8 z-20">
+    <AnimatePresence mode="wait">
+      {!isAuthenticated ? (
+        <motion.section
+          key="admin-login-screen"
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.98, y: -8 }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+          className="relative min-h-[90vh] w-full flex items-center justify-center px-4 py-16 sm:py-20 z-20 transform-gpu"
+          style={{ willChange: 'transform, opacity' }}
+        >
+          <div className="glass-panel max-w-md w-full rounded-2xl p-6 sm:p-9 relative overflow-hidden border border-amber-400/30 shadow-xl sm:shadow-[0_20px_50px_rgba(0,0,0,0.8)] transform-gpu">
+            {/* Top Gold Ribbon */}
+            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-amber-500/20 via-amber-400 to-amber-500/20" />
+
+            {/* Back Button */}
+            <button
+              onClick={onBackToHome}
+              type="button"
+              className="inline-flex items-center gap-1.5 text-xs text-amber-200/80 hover:text-white mb-6 transition-colors cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Kembali ke Halaman Utama</span>
+            </button>
+
+            {/* Header */}
+            <div className="text-center mb-6">
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-400/20 via-amber-500/10 to-transparent border border-amber-400/30 flex items-center justify-center mx-auto mb-3 shadow-[0_0_20px_rgba(245,208,97,0.25)] transform-gpu">
+                <ShieldCheck className="w-7 h-7 text-amber-300" />
+              </div>
+              <span className="text-[11px] font-semibold tracking-[0.25em] uppercase text-amber-300 block mb-1">
+                PORTAL KHUSUS PANITIA
+              </span>
+              <h2 className="text-2xl font-bold font-['Cinzel'] text-gold-gradient uppercase tracking-wider">
+                LOGIN ADMIN NATAL 2026
+              </h2>
+              <p className="text-xs text-gray-400 font-light mt-1">
+                Persekutuan Doa Universitas Gunadarma
+              </p>
+            </div>
+
+            {/* Error Message */}
+            {loginError && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+                className="p-3 rounded-xl bg-rose-950/40 border border-rose-500/40 text-rose-200 text-xs flex items-center gap-2 mb-4 transform-gpu"
+              >
+                <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                <span>{loginError}</span>
+              </motion.div>
+            )}
+
+            {/* Login Form */}
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5">
+                  Username Admin
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                    <User className="w-4 h-4 text-amber-300/70" />
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Masukkan username admin"
+                    className="w-full pl-10 pr-4 py-3 bg-neutral-900/80 border border-white/10 rounded-xl text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5">
+                  Password
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                    <KeyRound className="w-4 h-4 text-amber-300/70" />
+                  </div>
+                  <input
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Masukkan kata sandi"
+                    className="w-full pl-10 pr-4 py-3 bg-neutral-900/80 border border-white/10 rounded-xl text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoggingIn}
+                className="gold-btn w-full py-3.5 rounded-xl font-semibold text-neutral-950 text-xs tracking-widest uppercase cursor-pointer flex items-center justify-center gap-2 mt-2 shadow-[0_0_20px_rgba(245,208,97,0.3)] transform-gpu"
+              >
+                {isLoggingIn ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin text-neutral-950" />
+                    <span>MEMVERIFIKASI...</span>
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-4 h-4 text-neutral-950" />
+                    <span>MASUK SEBAGAI ADMIN</span>
+                  </>
+                )}
+              </button>
+            </form>
+
+            {/* Quick Demo Credentials Info */}
+            <div className="mt-6 p-3.5 rounded-xl bg-amber-950/20 border border-amber-400/20 text-xs text-gray-300 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-amber-300 flex items-center gap-1.5">
+                  <HelpCircle className="w-3.5 h-3.5" />
+                  Akun Demo Panitia:
+                </span>
+                <button
+                  type="button"
+                  onClick={handleFillDemo}
+                  className="text-[11px] text-amber-300 underline hover:text-white cursor-pointer"
+                >
+                  Isi Otomatis
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-[11px] font-mono bg-black/40 p-2 rounded-lg border border-white/5">
+                <div>
+                  <span className="text-gray-400 block text-[10px]">User:</span>
+                  <span className="text-amber-200">admin</span>
+                </div>
+                <div>
+                  <span className="text-gray-400 block text-[10px]">Pass:</span>
+                  <span className="text-amber-200">natal2026</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.section>
+      ) : (
+        <motion.section
+          key="admin-dashboard-screen"
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+          className="relative min-h-screen w-full py-12 sm:py-20 px-3 sm:px-6 lg:px-8 z-20 transform-gpu"
+          style={{ willChange: 'transform, opacity' }}
+        >
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Top Header Bar */}
         <div className="glass-panel rounded-2xl p-4 sm:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-amber-400/25">
@@ -726,12 +734,14 @@ export default function AdminPortal({ onBackToHome }) {
       {/* PARTICIPANT DETAIL TICKET MODAL */}
       <AnimatePresence>
         {selectedParticipant && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 sm:backdrop-blur-md overflow-y-auto">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="glass-panel max-w-md w-full rounded-2xl p-6 relative border border-amber-400/40 my-auto shadow-[0_0_50px_rgba(245,208,97,0.3)]"
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+              className="glass-panel max-w-md w-full rounded-2xl p-6 relative border border-amber-400/40 my-auto shadow-xl sm:shadow-[0_0_50px_rgba(245,208,97,0.3)] transform-gpu"
+              style={{ willChange: 'transform, opacity' }}
             >
               <button
                 onClick={() => setSelectedParticipant(null)}
@@ -838,12 +848,14 @@ export default function AdminPortal({ onBackToHome }) {
       {/* DELETE CONFIRMATION MODAL */}
       <AnimatePresence>
         {deleteConfirmId && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 sm:backdrop-blur-md">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0 }}
-              className="glass-panel max-w-sm w-full rounded-2xl p-6 text-center border border-rose-500/40 my-auto shadow-[0_0_40px_rgba(244,63,94,0.3)]"
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+              className="glass-panel max-w-sm w-full rounded-2xl p-6 text-center border border-rose-500/40 my-auto shadow-xl sm:shadow-[0_0_40px_rgba(244,63,94,0.3)] transform-gpu"
+              style={{ willChange: 'transform, opacity' }}
             >
               <div className="w-12 h-12 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center mx-auto mb-3">
                 <Trash2 className="w-6 h-6" />
@@ -875,6 +887,8 @@ export default function AdminPortal({ onBackToHome }) {
           </div>
         )}
       </AnimatePresence>
-    </section>
+        </motion.section>
+      )}
+    </AnimatePresence>
   );
 }
