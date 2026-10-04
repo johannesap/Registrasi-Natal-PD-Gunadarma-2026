@@ -1,6 +1,6 @@
 import React from 'react';
 import { Sparkles, RotateCcw, Ticket, Home, ArrowLeft } from 'lucide-react';
-import AudioAmbience from './AudioAmbience';
+import YouTubeAudio from './YouTubeAudio';
 
 export default function Navbar({
   currentPage,
@@ -48,11 +48,11 @@ export default function Navbar({
             <span className="hidden md:inline">Ulang Opening</span>
           </button>
 
-          {/* Sound Ambience Generator */}
-          <AudioAmbience />
+          {/* YouTube background music */}
+          <YouTubeAudio />
 
-          {/* Return to Home button when on registration page */}
-          {currentPage === 'registration' && (
+          {/* Return to Home button when on registration or admin page */}
+          {(currentPage === 'registration' || currentPage === 'admin') && (
             <button
               onClick={() => onNavigate('hero')}
               type="button"

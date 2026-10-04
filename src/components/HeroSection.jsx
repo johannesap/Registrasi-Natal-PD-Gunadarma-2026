@@ -22,6 +22,11 @@ export default function HeroSection({
   }, [openingKey]);
 
   const handleStartRegistration = () => {
+    try {
+      window.dispatchEvent(new CustomEvent('start-christmas-audio'));
+    } catch {
+      // ignore
+    }
     setIsLightSweeping(true);
     setTimeout(() => {
       onStartRegistration();

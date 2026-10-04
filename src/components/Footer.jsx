@@ -1,8 +1,7 @@
 import React from 'react';
-import { Heart, Sparkles, MapPin } from 'lucide-react';
+import { Heart, Sparkles, MapPin, ShieldCheck } from 'lucide-react';
 
-
-export default function Footer() {
+export default function Footer({ onNavigate }) {
   return (
     <footer className="relative w-full border-t border-amber-400/10 bg-[#02050c]/80 backdrop-blur-xl py-8 sm:py-12 px-4 sm:px-6 z-20">
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 sm:gap-8 text-center md:text-left">
@@ -23,11 +22,21 @@ export default function Footer() {
         </div>
 
         {/* Quick Links / Campus Info */}
-        <div className="flex flex-wrap justify-center items-center gap-2 sm:gap-3 text-[11px] sm:text-xs text-gray-400 font-light">
+        <div className="flex flex-col items-center md:items-start gap-2 text-[11px] sm:text-xs text-gray-400 font-light">
           <div className="flex items-center gap-1.5">
             <MapPin className="w-3.5 h-3.5 text-amber-300/80 shrink-0" />
             <span>Depok • Kalimalang • Karawaci • Cengkareng • Salemba • Simatupang</span>
           </div>
+          {onNavigate && (
+            <button
+              onClick={() => onNavigate('admin')}
+              type="button"
+              className="inline-flex items-center gap-1.5 text-[11px] text-amber-300/80 hover:text-amber-200 transition-colors cursor-pointer hover:underline pt-1"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-300" />
+              <span>Portal Khusus Panitia / Login Admin</span>
+            </button>
+          )}
         </div>
 
         {/* Copyright */}

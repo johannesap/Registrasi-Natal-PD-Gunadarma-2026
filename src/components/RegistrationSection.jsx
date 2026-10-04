@@ -23,6 +23,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { addRegistration } from '../utils/storage';
 
 const REGIONS = [
   { id: 'depok', name: 'Depok' },
@@ -99,18 +100,34 @@ export default function RegistrationSection({ onBackToHero }) {
     return found ? found.name : id;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      // Generate unique official ticket code
+    try {
+      // Generate initial ticket code
       const randomCode =
         'NATAL-UG-' +
         Math.floor(1000 + Math.random() * 9000) +
         '-' +
         (formData.npm.slice(-4) || '2026');
-      setTicketId(randomCode);
+
+      // Submit registration to backend API (with resilient offline fallback)
+      const registered = await addRegistration({
+        ticketId: randomCode,
+        fullName: formData.fullName.trim(),
+        npm: formData.npm.trim(),
+        email: formData.email.trim(),
+        whatsapp: formData.whatsapp.trim(),
+        region: formData.region,
+        komselStatus: formData.komselStatus,
+        mentorName: isBelumPunya ? '-' : (formData.mentorName || '-'),
+        faculty: formData.faculty || 'Gunadarma',
+        session: formData.session,
+      });
+
+      const actualTicketId = registered?.ticketId || randomCode;
+      setTicketId(actualTicketId);
 
       // Clean WhatsApp phone number (convert 08xxx to 628xxx)
       let cleanWa = formData.whatsapp.replace(/\D/g, '');
@@ -127,7 +144,7 @@ export default function RegistrationSection({ onBackToHero }) {
         `Shalom, *${formData.fullName.trim()}*!\n` +
         `Pendaftaran Ibadah & Perayaan Natal Anda telah *BERHASIL TERKONFIRMASI*.\n\n` +
         `📌 *DETAIL E-TICKET ANDA:*\n` +
-        `• Kode Tiket: *${randomCode}*\n` +
+        `• Kode Tiket: *${actualTicketId}*\n` +
         `• NPM: *${formData.npm}*\n` +
         `• Email: *${formData.email}*\n` +
         `• Region Kampus: *${getRegionName(formData.region)}*\n` +
@@ -140,9 +157,9 @@ export default function RegistrationSection({ onBackToHero }) {
         `_Simpan pesan dan kode tiket ini untuk ditunjukkan saat registrasi ulang di pintu masuk auditorium._\n\n` +
         `Sampai berjumpa dalam sukacita Natal! Tuhan Yesus memberkati. 🙏✨`;
 
-      const generatedWaUrl = `https://api.whatsapp.com/send?phone=${cleanWa}&text=${encodeURIComponent(
-        waMessage
-      )}`;
+      const generatedWaUrl =
+        registered?.dispatch?.whatsappUrl ||
+        `https://api.whatsapp.com/send?phone=${cleanWa}&text=${encodeURIComponent(waMessage)}`;
 
       const currentTime = new Date().toLocaleTimeString('id-ID', {
         hour: '2-digit',
@@ -156,7 +173,6 @@ export default function RegistrationSection({ onBackToHero }) {
         whatsappUrl: generatedWaUrl,
       });
 
-      setIsSubmitting(false);
       setSubmitted(true);
 
       // Trigger festive golden confetti celebration
@@ -170,7 +186,11 @@ export default function RegistrationSection({ onBackToHero }) {
       } catch (err) {
         console.error(err);
       }
-    }, 700);
+    } catch (err) {
+      console.error('Registration failed:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handlePrint = () => {
