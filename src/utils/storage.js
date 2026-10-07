@@ -264,35 +264,7 @@ export const loginAdmin = async (username, password) => {
   const validUser = 'admin';
   const validPass = 'natal2026';
 
-  // 1. Direct validation against official credentials
-  // Ensures admin can ALWAYS log in on Vercel, localhost, or any deployment
-  if (cleanUser === validUser && cleanPass === validPass) {
-    localStorage.setItem(AUTH_KEY, 'true');
-
-    // Optional background sync with backend server if online
-    try {
-      const res = await fetch(`${API_BASE}/admin/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify({ username: cleanUser, password: cleanPass }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data?.token) {
-          localStorage.setItem(AUTH_TOKEN_KEY, data.token);
-        }
-      }
-    } catch {
-      // Standalone/Vercel fallback - completely fine
-    }
-
-    return { success: true };
-  }
-
-  // 2. If custom credentials, query backend API
+  // 1. Prioritize querying backend API for PostgreSQL database verification
   try {
     const res = await fetch(`${API_BASE}/admin/login`, {
       method: 'POST',
@@ -310,11 +282,23 @@ export const loginAdmin = async (username, password) => {
         if (data.token) {
           localStorage.setItem(AUTH_TOKEN_KEY, data.token);
         }
-        return { success: true };
+        return { success: true, source: data.admin?.source || 'PostgreSQL' };
       }
+    } else if (res.status === 401) {
+      const data = await res.json().catch(() => null);
+      return {
+        success: false,
+        message: data?.message || 'Username atau kata sandi admin salah.',
+      };
     }
   } catch (error) {
-    console.warn('[API] Server unreachable during login:', error);
+    console.warn('[API] Server offline, falling back to local credentials validation:', error);
+  }
+
+  // 2. Fallback when server is unreachable (e.g. standalone Vercel preview)
+  if (cleanUser === validUser && cleanPass === validPass) {
+    localStorage.setItem(AUTH_KEY, 'true');
+    return { success: true, source: 'Offline Fallback' };
   }
 
   return {

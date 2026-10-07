@@ -302,17 +302,39 @@ class RegistrationController extends Controller
         $user = trim(strtolower($request->input('username', '')));
         $pass = trim($request->input('password', ''));
 
+        // 1. Verifikasi langsung ke database PostgreSQL (Tabel users)
+        $dbUser = \App\Models\User::whereRaw('LOWER(email) = ?', [$user])
+            ->orWhereRaw('LOWER(name) = ?', [$user])
+            ->first();
+
+        if ($dbUser && \Illuminate\Support\Facades\Hash::check($pass, $dbUser->password)) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Login Admin Berhasil (Terverifikasi di Database PostgreSQL)',
+                'token' => 'token_pg_' . time() . '_' . $dbUser->id,
+                'admin' => [
+                    'id' => $dbUser->id,
+                    'username' => $dbUser->name,
+                    'email' => $dbUser->email,
+                    'role' => 'Event Committee Administrator',
+                    'source' => 'PostgreSQL Database',
+                ],
+            ]);
+        }
+
+        // 2. Fallback Master Credentials jika database users belum dikonfigurasi
         $validUser = env('ADMIN_USER', 'admin');
         $validPass = env('ADMIN_PASS', 'natal2026');
 
         if ($user === strtolower($validUser) && $pass === $validPass) {
             return response()->json([
                 'success' => true,
-                'message' => 'Login Admin Berhasil (Laravel / PostgreSQL)',
+                'message' => 'Login Admin Berhasil (Master Credentials)',
                 'token' => 'token_laravel_pg_' . time(),
                 'admin' => [
                     'username' => $validUser,
                     'role' => 'Event Committee Administrator',
+                    'source' => 'Master Credentials',
                 ],
             ]);
         }
