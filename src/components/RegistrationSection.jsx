@@ -605,7 +605,7 @@ export default function RegistrationSection({ onBackToHero }) {
       {createPortal(
       <AnimatePresence>
         {registered && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
+          <div className="print-ticket fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -616,7 +616,7 @@ export default function RegistrationSection({ onBackToHero }) {
               {/* Close Button */}
               <button
                 onClick={() => setRegistered(null)}
-                className="absolute top-4 right-4 text-gray-400 hover:text-white text-sm cursor-pointer p-1"
+                className="print:hidden absolute top-4 right-4 text-gray-400 hover:text-white text-sm cursor-pointer p-1"
               >
                 ✕
               </button>
@@ -641,7 +641,7 @@ export default function RegistrationSection({ onBackToHero }) {
               </p>
 
               {/* Tickets are not sent automatically: tell people how to keep theirs */}
-              <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-950/40 via-neutral-900/80 to-emerald-950/40 border border-emerald-400/30 text-left text-xs text-gray-300 space-y-1.5 mb-5">
+              <div className="print:hidden p-4 rounded-xl bg-gradient-to-r from-emerald-950/40 via-neutral-900/80 to-emerald-950/40 border border-emerald-400/30 text-left text-xs text-gray-300 space-y-1.5 mb-5">
                 <div className="flex items-center gap-2 font-semibold text-emerald-300 uppercase tracking-wider">
                   <Send className="w-3.5 h-3.5" />
                   <span>Simpan Tiket Anda</span>
@@ -670,10 +670,13 @@ export default function RegistrationSection({ onBackToHero }) {
                   <span className="text-gray-400">Kakak Komsel:</span>
                   <span className="text-white">{registered.mentorName}</span>
                 </div>
+                <div className="pt-1.5 mt-1.5 border-t border-white/10 text-center text-gray-300">
+                  {EVENT.date} • {EVENT.time} • {EVENT.venue}
+                </div>
               </div>
 
               {/* Action Buttons: Open WhatsApp, Print, Done */}
-              <div className="space-y-2.5">
+              <div className="print:hidden space-y-2.5">
                 {/* 1-Click Open in WhatsApp */}
                 <a
                   href={registered.dispatch.whatsappUrl}
