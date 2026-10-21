@@ -34,7 +34,7 @@ export default function Footer({ onNavigate }) {
               className="inline-flex items-center gap-1.5 text-[11px] text-amber-300/80 hover:text-amber-200 transition-colors cursor-pointer hover:underline pt-1"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-amber-300" />
-              <span>Portal Khusus Panitia / Login Admin</span>
+              <span>Portal Khusus Panitia / Login</span>
             </button>
           )}
         </div>

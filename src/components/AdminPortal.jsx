@@ -239,7 +239,7 @@ export default function AdminPortal({ onBackToHome }) {
                 PORTAL KHUSUS PANITIA
               </span>
               <h2 className="text-2xl font-bold font-['Cinzel'] text-gold-gradient uppercase tracking-wider">
-                LOGIN ADMIN NATAL 2026
+                LOGIN NATAL 2026
               </h2>
               <p className="text-xs text-gray-400 font-light mt-1">
                 Persekutuan Doa Universitas Gunadarma
@@ -263,7 +263,7 @@ export default function AdminPortal({ onBackToHome }) {
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
                 <label htmlFor="admin-username" className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5">
-                  Username Admin
+                  Username
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
@@ -276,7 +276,7 @@ export default function AdminPortal({ onBackToHome }) {
                     required
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Masukkan username admin"
+                    placeholder="Masukkan username"
                     className="w-full pl-10 pr-4 py-3 bg-neutral-900/80 border border-white/10 rounded-xl text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
                   />
                 </div>
@@ -316,7 +316,7 @@ export default function AdminPortal({ onBackToHome }) {
                 ) : (
                   <>
                     <Lock className="w-4 h-4 text-neutral-950" />
-                    <span>MASUK SEBAGAI ADMIN</span>
+                    <span>MASUK</span>
                   </>
                 )}
               </button>

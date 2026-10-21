@@ -59,7 +59,7 @@ const requireRole = (role) => async (req, res, next) => {
   if (!user) {
     return res.status(401).json({
       success: false,
-      message: 'Sesi admin tidak valid atau sudah berakhir. Silakan login ulang.',
+      message: 'Sesi tidak valid atau sudah berakhir. Silakan login ulang.',
     });
   }
   if (user.role !== role) {
@@ -250,7 +250,7 @@ router.post('/admin/login', async (req, res) => {
     }
     return res.json({
       success: true,
-      message: 'Login Admin Berhasil',
+      message: 'Login berhasil',
       token: issueToken(user),
       admin: { username: user.name, email: user.email, role: user.role },
     });
@@ -258,7 +258,7 @@ router.post('/admin/login', async (req, res) => {
 
   return res.status(401).json({
     success: false,
-    message: 'Username atau kata sandi admin salah. Silakan coba lagi.',
+    message: 'Username atau kata sandi salah. Silakan coba lagi.',
   });
 });
 
