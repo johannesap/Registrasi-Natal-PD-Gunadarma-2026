@@ -1,22 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Sparkles, Calendar, MapPin } from 'lucide-react';
+import { Sparkles, Calendar, MapPin } from 'lucide-react';
 import ChristmasStar from './ChristmasStar';
 import TreeSilhouette from './TreeSilhouette';
 import { EVENT } from '../utils/event';
 
 export default function HeroSection({ onStartRegistration }) {
-  const [openingComplete, setOpeningComplete] = useState(false);
   const [isLightSweeping, setIsLightSweeping] = useState(false);
-
-  // Opening sequence finishes after ~4 seconds
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setOpeningComplete(true);
-    }, 4200);
-
-    return () => clearTimeout(timer);
-  }, []);
 
   const handleStartRegistration = () => {
     setIsLightSweeping(true);
@@ -209,26 +199,6 @@ export default function HeroSection({ onStartRegistration }) {
           </div>
         </motion.div>
       </div>
-
-      {/* 8. INDICATOR TO REGISTRATION PAGE */}
-      <motion.div
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: openingComplete ? 1 : 0.8, y: 0 }}
-        transition={{ duration: 1, delay: 4.3 }}
-        onClick={handleStartRegistration}
-        className="z-20 mt-6 flex flex-col items-center justify-center cursor-pointer group hover:text-amber-200 transition-colors"
-      >
-        <span className="text-[11px] sm:text-xs font-light tracking-[0.25em] uppercase text-gray-400 group-hover:text-amber-300 transition-colors">
-          Buka Halaman Registrasi
-        </span>
-        <motion.div
-          animate={{ y: [0, 6, 0] }}
-          transition={{ repeat: Infinity, duration: 2.2, ease: 'easeInOut' }}
-          className="mt-1.5 text-amber-400/80 group-hover:text-amber-300"
-        >
-          <ChevronDown className="w-5 h-5" />
-        </motion.div>
-      </motion.div>
     </section>
   );
 }
