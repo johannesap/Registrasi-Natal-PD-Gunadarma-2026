@@ -38,14 +38,19 @@ const ROLES = ['admin', 'sekretariat'];
 
 function issueToken(user) {
   // r only tells the browser which screen to show; the server re-reads the role from the database
+  const now = Date.now();
   const payload = Buffer.from(
-    JSON.stringify({ u: user.name, r: user.role, exp: Date.now() + TOKEN_TTL_MS })
+    JSON.stringify({ u: user.name, r: user.role, iat: now, exp: now + TOKEN_TTL_MS })
   ).toString('base64url');
   return `${payload}.${sign(payload)}`;
 }
 
-// Valid token AND the account still exists with this role, so deleting or demoting an account takes effect at once
-const requireRole = (role) => async (req, res, next) => {
+// Hashes written by PHP start with $2y$, which is the same algorithm as $2b$
+const passwordMatches = (user, password) =>
+  bcrypt.compare(password, String(user.password).replace(/^\$2y\$/, '$2b$'));
+
+// Valid token AND the account still exists with one of these roles, so deleting or demoting an account takes effect at once
+const requireRole = (...roles) => async (req, res, next) => {
   const [payload, sig] = (req.get('authorization') || '').replace(/^Bearer\s+/i, '').split('.');
   let claims = null;
   if (process.env.ADMIN_TOKEN_SECRET && payload && sig) {
@@ -55,14 +60,16 @@ const requireRole = (role) => async (req, res, next) => {
       claims = JSON.parse(Buffer.from(payload, 'base64url').toString());
     }
   }
-  const user = claims && claims.exp > Date.now() ? await findAdminUser(claims.u) : null;
+  let user = claims && claims.exp > Date.now() ? await findAdminUser(claims.u) : null;
+  // A password change ends every session that started before it
+  if (user?.password_changed_at && (claims.iat || 0) < user.password_changed_at.getTime()) user = null;
   if (!user) {
     return res.status(401).json({
       success: false,
       message: 'Sesi tidak valid atau sudah berakhir. Silakan login ulang.',
     });
   }
-  if (user.role !== role) {
+  if (!roles.includes(user.role)) {
     return res.status(403).json({ success: false, message: 'Akun ini tidak punya akses ke fitur ini.' });
   }
   req.user = user;
@@ -71,6 +78,7 @@ const requireRole = (role) => async (req, res, next) => {
 
 const sekretariatOnly = requireRole('sekretariat');
 const adminOnly = requireRole('admin');
+const anyRole = requireRole(...ROLES);
 
 // ==========================================
 // 1. HEALTH
@@ -243,8 +251,7 @@ router.post('/admin/login', async (req, res) => {
   const password = str(req.body?.password);
   const user = login && password ? await findAdminUser(login) : null;
 
-  // Hashes written by PHP start with $2y$, which is the same algorithm as $2b$
-  if (user && (await bcrypt.compare(password, String(user.password).replace(/^\$2y\$/, '$2b$')))) {
+  if (user && (await passwordMatches(user, password))) {
     if (!ROLES.includes(user.role)) {
       return res.status(403).json({ success: false, message: 'Akun ini belum punya peran. Hubungi admin.' });
     }
@@ -260,6 +267,29 @@ router.post('/admin/login', async (req, res) => {
     success: false,
     message: 'Username atau kata sandi salah. Silakan coba lagi.',
   });
+});
+
+// POST /api/me/password  body: { currentPassword, newPassword } - change your own password
+router.post('/me/password', anyRole, async (req, res) => {
+  const current = str(req.body?.currentPassword);
+  const next = str(req.body?.newPassword);
+  // 422, not 401: a wrong old password must not log the user out
+  if (!(await passwordMatches(req.user, current))) {
+    return res.status(422).json({ success: false, message: 'Password lama salah.' });
+  }
+  if (next.length < 8 || next.length > 72) {
+    return res.status(422).json({ success: false, message: 'Password baru harus 8–72 karakter.' });
+  }
+  if (next === current) {
+    return res.status(422).json({ success: false, message: 'Password baru harus berbeda dari password lama.' });
+  }
+
+  await updateUser(String(req.user._id), {
+    password: await bcrypt.hash(next, 12),
+    password_changed_at: new Date(),
+  });
+  // Other sessions of this account end now; this one continues with a fresh token
+  res.json({ success: true, message: 'Password berhasil diganti.', token: issueToken(req.user) });
 });
 
 // ==========================================
@@ -316,7 +346,11 @@ router.patch('/users/:id', adminOnly, async (req, res) => {
   }
 
   const fields = { ...input.fields };
-  if (input.password) fields.password = await bcrypt.hash(input.password, 12);
+  if (input.password) {
+    fields.password = await bcrypt.hash(input.password, 12);
+    // A reset ends that account's open sessions; not your own, or you would be logged out mid-edit
+    if (target.id !== String(req.user._id)) fields.password_changed_at = new Date();
+  }
   const user = await updateUser(target.id, fields);
   res.json({ success: true, message: `Akun ${user.name} diperbarui.`, data: user });
 });

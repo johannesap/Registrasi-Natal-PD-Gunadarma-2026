@@ -191,7 +191,10 @@ export async function upsertAdminUser({ name, email, role, passwordHash }) {
   await (await users()).updateOne(
     // match by name too, so a new email updates the same account instead of creating a second one
     { $or: [{ email: exactIgnoreCase(email) }, { name: exactIgnoreCase(name) }] },
-    { $set: { name, email, role, password: passwordHash, updated_at: now }, $setOnInsert: { created_at: now } },
+    {
+      $set: { name, email, role, password: passwordHash, password_changed_at: now, updated_at: now },
+      $setOnInsert: { created_at: now },
+    },
     { upsert: true }
   );
 }

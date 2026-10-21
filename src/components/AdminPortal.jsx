@@ -36,6 +36,7 @@ import {
 import { REGIONS, regionName } from '../utils/regions';
 import { intlPhone } from '../utils/phone';
 import AccountManager from './AccountManager';
+import ChangePasswordDialog from './ChangePasswordDialog';
 
 export default function AdminPortal({ onBackToHome }) {
   const [isAuthenticated, setIsAuthenticated] = useState(isAdminAuthenticated());
@@ -54,6 +55,7 @@ export default function AdminPortal({ onBackToHome }) {
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
   const [isLoadingData, setIsLoadingData] = useState(false);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
 
   // admin only manages accounts; sekretariat gets the registrations dashboard
   const role = isAuthenticated ? currentRole() : null;
@@ -380,6 +382,16 @@ export default function AdminPortal({ onBackToHome }) {
             >
               <FileSpreadsheet className="w-4 h-4 text-emerald-300" />
               <span>Export CSV/Excel</span>
+            </button>
+
+            {/* Change own password */}
+            <button
+              onClick={() => setShowPasswordDialog(true)}
+              type="button"
+              className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white/5 border border-amber-400/30 hover:bg-amber-500/15 text-amber-200 text-xs font-semibold tracking-wider uppercase transition-all cursor-pointer"
+            >
+              <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+              <span>Ganti Password</span>
             </button>
 
             {/* Back to Home Button */}
@@ -716,6 +728,16 @@ export default function AdminPortal({ onBackToHome }) {
           )}
         </div>
       </div>
+
+      {showPasswordDialog && (
+        <ChangePasswordDialog
+          onClose={() => setShowPasswordDialog(false)}
+          onAuthError={(err) => {
+            setShowPasswordDialog(false);
+            handleActionError(err);
+          }}
+        />
+      )}
 
       {/* PARTICIPANT DETAIL TICKET MODAL */}
       {createPortal(

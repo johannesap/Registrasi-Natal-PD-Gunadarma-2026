@@ -168,3 +168,36 @@ test('the last admin cannot be demoted', { skip }, async (t) => {
   });
   assert.equal(res.status, 409);
 });
+
+test('changing your own password ends older sessions but keeps this one', { skip }, async () => {
+  await makeUser('tes-ganti', 'sekretariat');
+  const mine = await loginToken('tes-ganti');
+  const other = await loginToken('tes-ganti'); // e.g. someone else who knew the old password
+  const change = (token, currentPassword) =>
+    authed('/me/password', token, 'POST', { currentPassword, newPassword: 'password-baru-9' });
+
+  assert.equal((await change(mine, 'bukan-password-lama')).status, 422, 'wrong old password');
+  assert.equal((await authed('/registrations', mine)).status, 200, 'a wrong old password does not log out');
+
+  const result = await (await change(mine, TEST_PW)).json();
+  assert.equal(result.success, true);
+  assert.equal((await authed('/registrations', result.token)).status, 200, 'this session continues');
+  assert.equal((await authed('/registrations', other)).status, 401, 'other sessions end');
+  assert.equal(await loginToken('tes-ganti'), undefined, 'old password no longer works');
+  assert.ok(await loginToken('tes-ganti', 'password-baru-9'), 'new password works');
+});
+
+test('an admin password reset ends that account’s sessions', { skip }, async () => {
+  const user = await makeUser('tes-reset', 'sekretariat');
+  const before = await loginToken('tes-reset');
+  const adm = await loginToken('tes-adm');
+  const res = await authed(`/users/${user.id}`, adm, 'PATCH', {
+    name: 'tes-reset',
+    email: 'tes-reset@example.com',
+    role: 'sekretariat',
+    password: 'password-reset-1',
+  });
+  assert.equal(res.status, 200);
+  assert.equal((await authed('/registrations', before)).status, 401);
+  assert.ok(await loginToken('tes-reset', 'password-reset-1'));
+});

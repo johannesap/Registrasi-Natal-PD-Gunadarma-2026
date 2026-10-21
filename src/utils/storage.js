@@ -84,6 +84,13 @@ export const currentRole = () => {
 // Tokens from before roles existed have no role: those users simply log in again
 export const isAdminAuthenticated = () => Boolean(currentRole());
 
+// Change your own password; the server ends other sessions and returns a fresh token for this one
+export const changePassword = async (currentPassword, newPassword) => {
+  const result = await apiFetch('/me/password', { method: 'POST', body: { currentPassword, newPassword } });
+  localStorage.setItem(AUTH_TOKEN_KEY, result.token);
+  return result.message;
+};
+
 // Panitia accounts (admin only)
 export const fetchUsers = async () => (await apiFetch('/users')).data;
 
