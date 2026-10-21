@@ -1,29 +1,18 @@
 import crypto from 'node:crypto';
 import express from 'express';
 import bcrypt from 'bcryptjs';
+import { regionName } from '../../src/utils/regions.js';
 import {
   listRegistrations,
-  findRegistration,
+  findExistingRegistration,
   addRegistration,
-  toggleCheckIn,
+  setCheckIn,
   deleteRegistration,
   countRegistrations,
-  calculateStats,
   findAdminUser,
 } from '../db.js';
 
 const router = express.Router();
-
-// Region labels helper
-const REGION_NAMES = {
-  depok: 'Depok',
-  kalimalang: 'Kalimalang',
-  karawaci: 'Karawaci',
-  cengkareng: 'Cengkareng',
-  simatupang: 'Simatupang',
-  salemba: 'Salemba',
-  alumni_tamu: 'Alumni / Tamu',
-};
 
 const str = (v) => (typeof v === 'string' ? v.trim() : '');
 
@@ -63,41 +52,58 @@ function requireAdmin(req, res, next) {
 }
 
 // ==========================================
-// 1. HEALTH & METRICS
+// 1. HEALTH
 // ==========================================
 router.get('/health', async (req, res) => {
   res.json({
     status: 'ok',
     database: 'MongoDB Atlas',
     event: 'Natal Persekutuan Doa Universitas Gunadarma 2026',
-    tagline: 'Merayakan Kasih, Menyalakan Harapan',
     serverTime: new Date().toISOString(),
     totalRegistrations: await countRegistrations(),
   });
 });
 
-router.get('/stats', requireAdmin, async (req, res) => {
-  res.json({ success: true, data: await calculateStats() });
-});
-
 // ==========================================
-// 2. REGISTRATIONS CRUD
+// 2. REGISTRATIONS
 // ==========================================
 
-// GET /api/registrations (supports query params ?region=...&search=...&checkedIn=...)
+// GET /api/registrations - all participants (admin)
 router.get('/registrations', requireAdmin, async (req, res) => {
-  const list = await listRegistrations(req.query);
+  const list = await listRegistrations();
   res.json({ success: true, total: list.length, data: list });
 });
 
-// GET /api/registrations/:ticketId (ticket code or NPM)
-router.get('/registrations/:ticketId', requireAdmin, async (req, res) => {
-  const found = await findRegistration(req.params.ticketId);
-  if (!found) {
-    return res.status(404).json({ success: false, message: 'Tiket tidak ditemukan' });
+// Click-to-chat link that opens WhatsApp with the ticket message for the participant's own number
+function whatsappLink(r) {
+  let phone = r.whatsapp;
+  if (phone.startsWith('0')) {
+    phone = '62' + phone.slice(1);
+  } else if (!phone.startsWith('62')) {
+    phone = '62' + phone;
   }
-  res.json({ success: true, data: found });
-});
+
+  const text =
+    `✨ *TIKET RESMI — NATAL PERSEKUTUAN DOA UNIVERSITAS GUNADARMA 2026* ✨\n` +
+    `_"Merayakan Kasih, Menyalakan Harapan"_\n\n` +
+    `Shalom, *${r.fullName}*!\n` +
+    `Pendaftaran Ibadah & Perayaan Natal Anda telah *BERHASIL TERKONFIRMASI*.\n\n` +
+    `📌 *DETAIL E-TICKET ANDA:*\n` +
+    `• Kode Tiket: *${r.ticketId}*\n` +
+    `• NPM: *${r.npm}*\n` +
+    `• Email: *${r.email}*\n` +
+    `• Region Kampus: *${regionName(r.region)}*\n` +
+    `• Kakak Komsel: *${r.mentorName}*\n` +
+    `• Jurusan: *${r.faculty}*\n\n` +
+    `🗓️ *WAKTU & TEMPAT:*\n` +
+    `• Tanggal: Jumat, 18 Desember 2026\n` +
+    `• Pukul: 16.30 WIB - Selesai\n` +
+    `• Lokasi: Auditorium Kampus Gunadarma\n\n` +
+    `_Simpan pesan dan kode tiket ini untuk ditunjukkan saat registrasi ulang di pintu masuk auditorium._\n\n` +
+    `Sampai berjumpa dalam sukacita Natal! Tuhan Yesus memberkati. 🙏✨`;
+
+  return `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`;
+}
 
 // POST /api/register - Public user registration (NO LOGIN REQUIRED)
 router.post('/register', async (req, res) => {
@@ -105,7 +111,7 @@ router.post('/register', async (req, res) => {
   const fullName = str(body.fullName);
   const npm = str(body.npm);
   const email = str(body.email);
-  const whatsapp = str(body.whatsapp);
+  const whatsapp = str(body.whatsapp).replace(/\D/g, '');
   const region = (str(body.region) || 'depok').toLowerCase();
   const komselStatus = str(body.komselStatus) || 'Sudah memiliki Komsel';
   const faculty = str(body.faculty) || 'Universitas Gunadarma';
@@ -122,67 +128,44 @@ router.post('/register', async (req, res) => {
     return fail('Format email tidak valid. Contoh: nama@gmail.com');
   }
   if (!whatsapp) return fail('Nomor WhatsApp wajib diisi.');
-
-  const cleanWaDigits = whatsapp.replace(/\D/g, '');
-  if (cleanWaDigits.length < 9 || cleanWaDigits.length > 13) {
+  if (whatsapp.length < 9 || whatsapp.length > 13) {
     return fail('Nomor WhatsApp harus terdiri dari 9 hingga 13 digit angka.');
   }
 
   const textFields = [fullName, email, region, komselStatus, str(body.mentorName), faculty, session];
   if (textFields.some((v) => v.length > 150)) return fail('Isian terlalu panjang (maksimal 150 karakter).');
 
+  // ponytail: check-then-insert; two submits in the same instant can still both insert. Fine with the
+  // submit button disabled while sending; add a unique {npm, email} index if duplicates still show up.
+  const existing = await findExistingRegistration(npm, email);
+  if (existing) {
+    return res.json({
+      success: true,
+      alreadyRegistered: true,
+      message: 'Anda sudah terdaftar sebelumnya. Ini tiket Anda.',
+      data: existing,
+      dispatch: { whatsappUrl: whatsappLink(existing) },
+    });
+  }
+
   // Auto hyphen logic for Komsel if belum memiliki
   const isBelumPunya = komselStatus.toLowerCase().includes('belum memiliki');
-  const finalMentorName = isBelumPunya ? '-' : str(body.mentorName) || '-';
+  const mentorName = isBelumPunya ? '-' : str(body.mentorName) || '-';
 
-  // Generate unique official ticket code
-  const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+  // Ticket code; the unique index rejects the rare collision, and the user simply submits again
+  const randomSuffix = crypto.randomInt(1000, 10000);
   const npmSuffix = npm.length >= 4 ? npm.slice(-4) : '2026';
   const ticketId = `NATAL-UG-${randomSuffix}-${npmSuffix}`;
 
-  // Clean WA for click-to-chat API URL
-  let formattedWa = cleanWaDigits;
-  if (formattedWa.startsWith('0')) {
-    formattedWa = '62' + formattedWa.slice(1);
-  } else if (!formattedWa.startsWith('62')) {
-    formattedWa = '62' + formattedWa;
-  }
-
-  const regionDisplayName = REGION_NAMES[region] || region;
-
-  // Compose official WhatsApp message
-  const waMessageText =
-    `✨ *TIKET RESMI — NATAL PERSEKUTUAN DOA UNIVERSITAS GUNADARMA 2026* ✨\n` +
-    `_"Merayakan Kasih, Menyalakan Harapan"_\n\n` +
-    `Shalom, *${fullName}*!\n` +
-    `Pendaftaran Ibadah & Perayaan Natal Anda telah *BERHASIL TERKONFIRMASI*.\n\n` +
-    `📌 *DETAIL E-TICKET ANDA:*\n` +
-    `• Kode Tiket: *${ticketId}*\n` +
-    `• NPM: *${npm}*\n` +
-    `• Email: *${email}*\n` +
-    `• Region Kampus: *${regionDisplayName}*\n` +
-    `• Kakak Komsel: *${finalMentorName}*\n` +
-    `• Jurusan: *${faculty}*\n\n` +
-    `🗓️ *WAKTU & TEMPAT:*\n` +
-    `• Tanggal: Jumat, 18 Desember 2026\n` +
-    `• Pukul: 16.30 WIB - Selesai\n` +
-    `• Lokasi: Auditorium Kampus Gunadarma\n\n` +
-    `_Simpan pesan dan kode tiket ini untuk ditunjukkan saat registrasi ulang di pintu masuk auditorium._\n\n` +
-    `Sampai berjumpa dalam sukacita Natal! Tuhan Yesus memberkati. 🙏✨`;
-
-  const waDispatchUrl = `https://api.whatsapp.com/send?phone=${formattedWa}&text=${encodeURIComponent(
-    waMessageText
-  )}`;
-
-  const newRecord = await addRegistration({
+  const record = await addRegistration({
     ticketId,
     fullName,
     npm,
     email,
-    whatsapp: cleanWaDigits,
+    whatsapp,
     region,
     komselStatus,
-    mentorName: finalMentorName,
+    mentorName,
     faculty,
     session,
   });
@@ -191,22 +174,20 @@ router.post('/register', async (req, res) => {
 
   res.status(201).json({
     success: true,
-    message: 'Registrasi berhasil! Tiket resmi telah diterbitkan di database MongoDB.',
-    data: newRecord,
-    dispatch: {
-      whatsappUrl: waDispatchUrl,
-      whatsappRecipient: formattedWa,
-      emailRecipient: email,
-      dispatchedAt: new Date().toISOString(),
-      emailStatus: 'sent_simulated',
-      whatsappStatus: 'ready',
-    },
+    message: 'Registrasi berhasil! Tiket resmi telah diterbitkan.',
+    data: record,
+    dispatch: { whatsappUrl: whatsappLink(record) },
   });
 });
 
-// PATCH /api/registrations/:ticketId/checkin
+// PATCH /api/registrations/:ticketId/checkin  body: { checkedIn: true|false }
 router.patch('/registrations/:ticketId/checkin', requireAdmin, async (req, res) => {
-  const item = await toggleCheckIn(req.params.ticketId);
+  const checkedIn = req.body?.checkedIn;
+  if (typeof checkedIn !== 'boolean') {
+    return res.status(422).json({ success: false, message: 'checkedIn harus true atau false.' });
+  }
+
+  const item = await setCheckIn(req.params.ticketId, checkedIn);
   if (!item) {
     return res.status(404).json({ success: false, message: 'Tiket tidak ditemukan' });
   }
@@ -225,7 +206,7 @@ router.delete('/registrations/:ticketId', requireAdmin, async (req, res) => {
     return res.status(404).json({ success: false, message: 'Data registrasi tidak ditemukan' });
   }
 
-  res.json({ success: true, message: 'Data registrasi berhasil dihapus dari MongoDB.', remaining });
+  res.json({ success: true, message: 'Data registrasi berhasil dihapus.', remaining });
 });
 
 // ==========================================
@@ -240,19 +221,13 @@ router.post('/admin/login', async (req, res) => {
   const password = str(req.body?.password);
   const user = login && password ? await findAdminUser(login) : null;
 
-  // PHP writes bcrypt hashes as $2y$, which is the same algorithm as $2b$
+  // Hashes written by PHP start with $2y$, which is the same algorithm as $2b$
   if (user && (await bcrypt.compare(password, String(user.password).replace(/^\$2y\$/, '$2b$')))) {
     return res.json({
       success: true,
-      message: 'Login Admin Berhasil (Terverifikasi di Database MongoDB)',
+      message: 'Login Admin Berhasil',
       token: issueToken(user.name),
-      admin: {
-        id: String(user._id),
-        username: user.name,
-        email: user.email,
-        role: 'Event Committee Administrator',
-        source: 'MongoDB Database',
-      },
+      admin: { username: user.name, email: user.email },
     });
   }
 
@@ -260,55 +235,6 @@ router.post('/admin/login', async (req, res) => {
     success: false,
     message: 'Username atau kata sandi admin salah. Silakan coba lagi.',
   });
-});
-
-// ==========================================
-// 4. CSV EXPORT ENDPOINT
-// ==========================================
-router.get('/export', requireAdmin, async (req, res) => {
-  const registrations = await listRegistrations({}, 1);
-
-  const headers = [
-    'No',
-    'Kode Tiket',
-    'Nama Lengkap',
-    'NPM',
-    'Email',
-    'Nomor WhatsApp',
-    'Region Kampus',
-    'Status Komsel',
-    'Nama Kakak Komsel',
-    'Jurusan/Fakultas',
-    'Status Check-In',
-    'Waktu Check-In',
-    'Waktu Registrasi',
-  ];
-
-  const rows = registrations.map((r, idx) => [
-    idx + 1,
-    `"${r.ticketId || ''}"`,
-    `"${(r.fullName || '').replace(/"/g, '""')}"`,
-    `'${r.npm || ''}`,
-    `"${r.email || ''}"`,
-    `'${r.whatsapp || ''}`,
-    `"${REGION_NAMES[r.region] || r.region || ''}"`,
-    `"${(r.komselStatus || '').replace(/"/g, '""')}"`,
-    `"${(r.mentorName || '-').replace(/"/g, '""')}"`,
-    `"${(r.faculty || '-').replace(/"/g, '""')}"`,
-    r.isCheckedIn ? 'Hadir' : 'Belum Hadir',
-    `"${r.checkedInAt || '-'}"`,
-    `"${r.registeredAt || ''}"`,
-  ]);
-
-  const csvContent =
-    '﻿' + [headers.join(','), ...rows.map((row) => row.join(','))].join('\r\n');
-
-  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-  res.setHeader(
-    'Content-Disposition',
-    `attachment; filename=Data_Registrasi_Natal_PD_UG_2026_${new Date().toISOString().slice(0, 10)}.csv`
-  );
-  res.status(200).send(csvContent);
 });
 
 // Catch-all for undefined /api routes

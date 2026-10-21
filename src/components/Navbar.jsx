@@ -2,11 +2,7 @@ import React from 'react';
 import { Sparkles } from 'lucide-react';
 import YouTubeAudio from './YouTubeAudio';
 
-export default function Navbar({
-  currentPage,
-  onNavigate,
-  onReplayOpening,
-}) {
+export default function Navbar({ onNavigate }) {
   return (
     <header className="fixed top-0 inset-x-0 z-40 px-3 sm:px-6 py-3 sm:py-4 pointer-events-none">
       <div className="max-w-6xl mx-auto flex items-center justify-between pointer-events-auto">

@@ -24,6 +24,7 @@ dist-ssr
 *.sw?
 
 .vercel
+.env
 
 # Local registration data
 server/data/registrations.json

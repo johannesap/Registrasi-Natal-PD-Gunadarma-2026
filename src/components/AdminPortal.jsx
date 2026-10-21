@@ -6,48 +6,32 @@ import {
   KeyRound,
   ShieldCheck,
   LogOut,
-  Download,
   Search,
-  Filter,
   CheckCircle2,
-  XCircle,
   Eye,
   Trash2,
   RefreshCw,
   Users,
   MapPin,
   Ticket,
-  Calendar,
   Clock,
   Sparkles,
   ArrowLeft,
-  ChevronDown,
   Phone,
   Mail,
   FileSpreadsheet,
   AlertCircle,
 } from 'lucide-react';
 import {
-  getRegistrations,
   fetchRegistrations,
   deleteRegistration,
-  toggleCheckIn,
+  setCheckIn,
   isAdminAuthenticated,
   loginAdmin,
   logoutAdmin,
   exportRegistrationsToCSV,
 } from '../utils/storage';
-
-const REGION_OPTIONS = [
-  'Semua Region',
-  'Depok',
-  'Kalimalang',
-  'Karawaci',
-  'Cengkareng',
-  'Simatupang',
-  'Salemba',
-  'Alumni / Tamu',
-];
+import { REGIONS, regionName } from '../utils/regions';
 
 export default function AdminPortal({ onBackToHome }) {
   const [isAuthenticated, setIsAuthenticated] = useState(isAdminAuthenticated());
@@ -59,14 +43,13 @@ export default function AdminPortal({ onBackToHome }) {
   // Dashboard Data State
   const [registrations, setRegistrations] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedRegion, setSelectedRegion] = useState('Semua Region');
+  const [selectedRegion, setSelectedRegion] = useState('all');
   const [selectedKomselFilter, setSelectedKomselFilter] = useState('Semua');
   const [selectedCheckInFilter, setSelectedCheckInFilter] = useState('Semua');
   const [selectedParticipant, setSelectedParticipant] = useState(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
   const [isLoadingData, setIsLoadingData] = useState(false);
-  const [serverOnline, setServerOnline] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -77,14 +60,9 @@ export default function AdminPortal({ onBackToHome }) {
   const loadData = async () => {
     setIsLoadingData(true);
     try {
-      const data = await fetchRegistrations();
-      setRegistrations(data);
-      setServerOnline(true);
+      setRegistrations(await fetchRegistrations());
     } catch (err) {
-      if (err.status === 401) return handleSessionExpired(err);
-      const fallback = getRegistrations();
-      setRegistrations(fallback);
-      setServerOnline(false);
+      handleActionError(err);
     } finally {
       setIsLoadingData(false);
     }
@@ -99,8 +77,7 @@ export default function AdminPortal({ onBackToHome }) {
       const result = await loginAdmin(username, password);
       setIsLoggingIn(false);
       if (result.success) {
-        setIsAuthenticated(true);
-        await loadData();
+        setIsAuthenticated(true); // the effect above loads the data
       } else {
         setLoginError(result.message);
       }
@@ -128,9 +105,12 @@ export default function AdminPortal({ onBackToHome }) {
     window.alert(err.message);
   };
 
-  const handleToggleCheckIn = async (ticketId) => {
+  // Sends the wanted state, not "flip", so a double tap cannot undo a check-in
+  const handleToggleCheckIn = async (row) => {
     try {
-      setRegistrations(await toggleCheckIn(ticketId));
+      const updated = await setCheckIn(row.ticketId, !row.isCheckedIn);
+      setRegistrations((list) => list.map((r) => (r.ticketId === updated.ticketId ? updated : r)));
+      setSelectedParticipant((p) => (p?.ticketId === updated.ticketId ? updated : p));
     } catch (err) {
       handleActionError(err);
     }
@@ -138,7 +118,8 @@ export default function AdminPortal({ onBackToHome }) {
 
   const handleDelete = async (ticketId) => {
     try {
-      setRegistrations(await deleteRegistration(ticketId));
+      await deleteRegistration(ticketId);
+      setRegistrations((list) => list.filter((r) => r.ticketId !== ticketId));
     } catch (err) {
       return handleActionError(err);
     } finally {
@@ -167,15 +148,13 @@ export default function AdminPortal({ onBackToHome }) {
         item.mentorName?.toLowerCase().includes(q) ||
         item.faculty?.toLowerCase().includes(q);
 
-      const matchRegion =
-        selectedRegion === 'Semua Region' ||
-        item.region?.toLowerCase() === selectedRegion.toLowerCase();
+      const matchRegion = selectedRegion === 'all' || item.region === selectedRegion;
 
-      const isBelumKomsel = item.komselStatus?.includes('Belum memiliki');
+      // Alumni / Pengurus and Tamu are neither "Sudah" nor "Belum"
       const matchKomsel =
         selectedKomselFilter === 'Semua' ||
-        (selectedKomselFilter === 'Sudah Komsel' && !isBelumKomsel) ||
-        (selectedKomselFilter === 'Belum Komsel' && isBelumKomsel);
+        (selectedKomselFilter === 'Sudah Komsel' && item.komselStatus?.includes('Sudah memiliki')) ||
+        (selectedKomselFilter === 'Belum Komsel' && item.komselStatus?.includes('Belum memiliki'));
 
       const matchCheckIn =
         selectedCheckInFilter === 'Semua' ||
@@ -193,7 +172,6 @@ export default function AdminPortal({ onBackToHome }) {
     const belumKomsel = registrations.filter((r) =>
       r.komselStatus?.includes('Belum memiliki')
     ).length;
-    const sudahKomsel = total - belumKomsel;
 
     // Region counts
     const regionMap = {};
@@ -214,9 +192,8 @@ export default function AdminPortal({ onBackToHome }) {
     return {
       total,
       hadir,
-      sudahKomsel,
       belumKomsel,
-      topRegion: topRegion !== '-' ? topRegion.toUpperCase() : '-',
+      topRegion: topRegion !== '-' ? regionName(topRegion).toUpperCase() : '-',
     };
   }, [registrations]);
 
@@ -500,9 +477,12 @@ export default function AdminPortal({ onBackToHome }) {
                 onChange={(e) => setSelectedRegion(e.target.value)}
                 className="w-full pl-9 pr-8 py-2.5 bg-neutral-900/80 border border-white/10 rounded-xl text-xs sm:text-sm text-gray-100 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all appearance-none cursor-pointer"
               >
-                {REGION_OPTIONS.map((opt) => (
-                  <option key={opt} value={opt} className="bg-neutral-900 text-white">
-                    {opt}
+                <option value="all" className="bg-neutral-900 text-white">
+                  Semua Region
+                </option>
+                {REGIONS.map((r) => (
+                  <option key={r.id} value={r.id} className="bg-neutral-900 text-white">
+                    {r.name}
                   </option>
                 ))}
               </select>
@@ -568,14 +548,14 @@ export default function AdminPortal({ onBackToHome }) {
               {registrations.length} peserta
             </span>
             {(searchQuery ||
-              selectedRegion !== 'Semua Region' ||
+              selectedRegion !== 'all' ||
               selectedKomselFilter !== 'Semua' ||
               selectedCheckInFilter !== 'Semua') && (
               <button
                 type="button"
                 onClick={() => {
                   setSearchQuery('');
-                  setSelectedRegion('Semua Region');
+                  setSelectedRegion('all');
                   setSelectedKomselFilter('Semua');
                   setSelectedCheckInFilter('Semua');
                 }}
@@ -645,7 +625,7 @@ export default function AdminPortal({ onBackToHome }) {
                       </td>
                       <td className="py-3.5 px-4">
                         <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-400/15 text-amber-200 border border-amber-400/20 mb-1">
-                          {row.region?.toUpperCase()}
+                          {regionName(row.region)?.toUpperCase()}
                         </span>
                         <div className="text-[11px] text-gray-400 truncate max-w-[150px]">
                           {row.faculty || '-'}
@@ -663,7 +643,7 @@ export default function AdminPortal({ onBackToHome }) {
                       <td className="py-3.5 px-4 text-center">
                         <button
                           type="button"
-                          onClick={() => handleToggleCheckIn(row.ticketId)}
+                          onClick={() => handleToggleCheckIn(row)}
                           className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all cursor-pointer ${
                             row.isCheckedIn
                               ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 hover:bg-emerald-500/30'
@@ -785,7 +765,7 @@ export default function AdminPortal({ onBackToHome }) {
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <span className="text-[10px] text-gray-400 uppercase block">Region</span>
-                    <span className="text-white uppercase">{selectedParticipant.region}</span>
+                    <span className="text-white uppercase">{regionName(selectedParticipant.region)}</span>
                   </div>
                   <div>
                     <span className="text-[10px] text-gray-400 uppercase block">Kakak Komsel</span>
@@ -802,13 +782,7 @@ export default function AdminPortal({ onBackToHome }) {
               <div className="flex gap-2.5">
                 <button
                   type="button"
-                  onClick={() => {
-                    handleToggleCheckIn(selectedParticipant.ticketId);
-                    setSelectedParticipant((prev) => ({
-                      ...prev,
-                      isCheckedIn: !prev.isCheckedIn,
-                    }));
-                  }}
+                  onClick={() => handleToggleCheckIn(selectedParticipant)}
                   className={`flex-1 py-2.5 rounded-xl font-semibold text-xs tracking-wider uppercase transition-colors cursor-pointer ${
                     selectedParticipant.isCheckedIn
                       ? 'bg-neutral-800 text-gray-300 hover:bg-neutral-700'

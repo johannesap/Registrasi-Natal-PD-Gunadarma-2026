@@ -4,22 +4,18 @@ import { ChevronDown, Sparkles, Calendar, MapPin } from 'lucide-react';
 import ChristmasStar from './ChristmasStar';
 import TreeSilhouette from './TreeSilhouette';
 
-export default function HeroSection({
-  onStartRegistration,
-  openingKey = 0,
-}) {
+export default function HeroSection({ onStartRegistration }) {
   const [openingComplete, setOpeningComplete] = useState(false);
   const [isLightSweeping, setIsLightSweeping] = useState(false);
 
   // Opening sequence finishes after ~4 seconds
   useEffect(() => {
-    setOpeningComplete(false);
     const timer = setTimeout(() => {
       setOpeningComplete(true);
     }, 4200);
 
     return () => clearTimeout(timer);
-  }, [openingKey]);
+  }, []);
 
   const handleStartRegistration = () => {
     setIsLightSweeping(true);
@@ -33,7 +29,6 @@ export default function HeroSection({
     <section className="relative min-h-screen w-full flex flex-col items-center justify-between px-4 sm:px-6 pt-24 sm:pt-28 pb-8 overflow-hidden select-none">
       {/* Cinematic Center Radiant Warm Aura (GPU Optimized) */}
       <motion.div
-        key={`aura-${openingKey}`}
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 2.2, ease: 'easeOut', delay: 0.2 }}
@@ -70,7 +65,6 @@ export default function HeroSection({
 
         {/* 2. Official Badge */}
         <motion.div
-          key={`badge-${openingKey}`}
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.9, delay: 0.8, ease: [0.16, 1, 0.3, 1] }}
@@ -84,7 +78,6 @@ export default function HeroSection({
 
         {/* 3. "NATAL" - Largest text with GPU-accelerated smooth scale + opacity */}
         <motion.div
-          key={`natal-${openingKey}`}
           initial={{
             opacity: 0,
             scale: 0.9,
@@ -125,7 +118,6 @@ export default function HeroSection({
 
         {/* 4. "PERSEKUTUAN DOA" - Smooth Hardware-Accelerated Animation */}
         <motion.h2
-          key={`pd-${openingKey}`}
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{
@@ -144,7 +136,6 @@ export default function HeroSection({
 
         {/* 5. "UNIVERSITAS GUNADARMA" - Sophisticated Letter Spacing without relayout */}
         <motion.p
-          key={`ug-${openingKey}`}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{
@@ -160,7 +151,6 @@ export default function HeroSection({
 
         {/* 6. TAGLINE: "Merayakan Kasih, Menyalakan Harapan" */}
         <motion.div
-          key={`tagline-${openingKey}`}
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{
@@ -180,7 +170,6 @@ export default function HeroSection({
 
         {/* 7. CTA BUTTON: "MULAI REGISTRASI" */}
         <motion.div
-          key={`cta-${openingKey}`}
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{
@@ -222,7 +211,6 @@ export default function HeroSection({
 
       {/* 8. INDICATOR TO REGISTRATION PAGE */}
       <motion.div
-        key={`scroll-${openingKey}`}
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: openingComplete ? 1 : 0.8, y: 0 }}
         transition={{ duration: 1, delay: 4.3 }}

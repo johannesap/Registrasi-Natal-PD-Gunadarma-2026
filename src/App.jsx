@@ -14,7 +14,6 @@ export default function App() {
     if (window.location.hash === "#registrasi") return "registration";
     return "hero";
   });
-  const [openingKey, setOpeningKey] = useState(0);
 
   // Sync with browser URL hash
   useEffect(() => {
@@ -52,12 +51,6 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleReplayOpening = () => {
-    navigateTo("hero");
-    setOpeningKey((prev) => prev + 1);
-    audioManager.restart();
-  };
-
   return (
     <div className="relative min-h-screen w-full bg-[#02040a] text-gray-100 overflow-x-hidden selection:bg-amber-400/25 selection:text-amber-200 flex flex-col justify-between">
       {/* 1. CINEMATIC HIGH-PERFORMANCE BACKGROUND (GPU Optimized) */}
@@ -90,14 +83,14 @@ export default function App() {
       <ChristmasNightCanvas />
 
       {/* 3. FLOATING NAVBAR */}
-      <Navbar currentPage={currentPage} onNavigate={navigateTo} onReplayOpening={handleReplayOpening} />
+      <Navbar onNavigate={navigateTo} />
 
       {/* 4. MULTI-PAGE ROUTER WITH CINEMATIC TRANSITIONS */}
       <main className="relative z-20 flex-1 flex flex-col justify-center">
         <AnimatePresence mode="wait">
           {currentPage === "hero" && (
             <motion.div
-              key={`page-hero-${openingKey}`}
+              key="page-hero"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0, scale: 0.98 }}
@@ -105,7 +98,7 @@ export default function App() {
               className="w-full transform-gpu"
               style={{ willChange: "transform, opacity" }}
             >
-              <HeroSection key={openingKey} openingKey={openingKey} onStartRegistration={() => navigateTo("registration")} />
+              <HeroSection onStartRegistration={() => navigateTo("registration")} />
             </motion.div>
           )}
 

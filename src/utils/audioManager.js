@@ -40,13 +40,6 @@ class ChristmasAudioManager {
       this.notify();
     });
 
-    this.audio.addEventListener('ended', () => {
-      if (this.audio) {
-        this.audio.currentTime = 0;
-        this.audio.play().catch(() => {});
-      }
-    });
-
     // Try playing once enough data is ready
     this.audio.addEventListener('canplay', () => {
       if (!this.isPlaying && !this.hasUnlocked) {
@@ -94,7 +87,7 @@ class ChristmasAudioManager {
         this.hasUnlocked = true;
         this.notify();
         cleanup();
-      } catch (err) {
+      } catch {
         // If this specific event (e.g. pointerdown) was not accepted by browser policy,
         // DO NOT cleanup! Let the subsequent touchend or click in the tap sequence try.
       }
@@ -148,14 +141,6 @@ class ChristmasAudioManager {
     } else {
       return await this.play();
     }
-  }
-
-  async restart() {
-    this.init();
-    if (this.audio) {
-      this.audio.currentTime = 0;
-    }
-    return await this.play();
   }
 
   subscribe(callback) {

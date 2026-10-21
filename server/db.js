@@ -1,25 +1,32 @@
 import { MongoClient } from 'mongodb';
 
-// Documents use the same snake_case fields as the Laravel models, so both backends share one database.
-let clientPromise = null;
+// Documents keep the snake_case fields the database already has (first written by the old Laravel backend)
+let dbPromise = null;
+let client = null;
 
-async function getDb() {
+async function connect() {
   if (!process.env.MONGODB_URI) throw new Error('MONGODB_URI belum diatur');
-  clientPromise ??= new MongoClient(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 10000 })
-    .connect()
-    .catch((err) => {
-    clientPromise = null; // retry on the next request instead of caching the failure
+  client = await new MongoClient(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 10000 }).connect();
+  const db = client.db(process.env.MONGODB_DATABASE || 'natal_pd_2026');
+  // No-op when it exists; keeps a fresh database (e.g. dev) from accepting duplicate ticket codes
+  await db.collection('registrations').createIndex({ ticket_id: 1 }, { unique: true });
+  return db;
+}
+
+function getDb() {
+  dbPromise ??= connect().catch((err) => {
+    dbPromise = null; // retry on the next request instead of caching the failure
     throw err;
   });
-  const client = await clientPromise;
-  return client.db(process.env.MONGODB_DATABASE || 'natal_pd_2026');
+  return dbPromise;
 }
 
 const registrations = async () => (await getDb()).collection('registrations');
 
 const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const exactIgnoreCase = (s) => new RegExp(`^${escapeRegex(s)}$`, 'i');
 
-// Date parts in WIB, matching Laravel's Asia/Jakarta timezone
+// Date parts in WIB (Asia/Jakarta)
 function wib(date) {
   const parts = new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Asia/Jakarta',
@@ -43,7 +50,7 @@ const formatRegistered = (date) => {
   return `${p.day}/${p.month}/${p.year}, ${p.hour}.${p.minute}`;
 };
 
-// Same shape as Registration::toFrontendArray() in Laravel
+// Shape the frontend expects (camelCase)
 export function toFrontend(doc) {
   return {
     id: String(doc._id),
@@ -63,34 +70,14 @@ export function toFrontend(doc) {
   };
 }
 
-export async function listRegistrations({ search, region, checkedIn } = {}, sort = -1) {
-  const filter = {};
-
-  if (search && search.trim()) {
-    const q = new RegExp(escapeRegex(search.trim()), 'i');
-    filter.$or = ['full_name', 'npm', 'ticket_id', 'email', 'whatsapp', 'mentor_name'].map((f) => ({
-      [f]: q,
-    }));
-  }
-
-  if (region && region !== 'all' && region !== 'Semua Region') {
-    filter.region = region.toLowerCase();
-  }
-
-  if (checkedIn !== undefined && checkedIn !== '' && checkedIn !== 'all') {
-    filter.is_checked_in = checkedIn === 'true' || checkedIn === '1';
-  }
-
-  const docs = await (await registrations()).find(filter).sort({ _id: sort }).toArray();
+export async function listRegistrations() {
+  const docs = await (await registrations()).find().sort({ _id: -1 }).toArray();
   return docs.map(toFrontend);
 }
 
-// Lookup by ticket code or NPM
-export async function findRegistration(ticketIdOrNpm) {
-  const key = ticketIdOrNpm.trim();
-  const doc = await (await registrations()).findOne({
-    $or: [{ ticket_id: key.toUpperCase() }, { npm: key }],
-  });
+// Same NPM + email means the same person submitting again (guests type any NPM, so NPM alone is not enough)
+export async function findExistingRegistration(npm, email) {
+  const doc = await (await registrations()).findOne({ npm, email: exactIgnoreCase(email) });
   return doc ? toFrontend(doc) : null;
 }
 
@@ -117,19 +104,23 @@ export async function addRegistration(reg) {
   return toFrontend({ ...doc, _id: insertedId });
 }
 
-export async function toggleCheckIn(ticketId) {
-  const col = await registrations();
-  const current = await col.findOne({ ticket_id: ticketId.trim().toUpperCase() });
-  if (!current) return null;
-
-  const next = !current.is_checked_in;
+// Sets (not flips) the check-in, so a repeated request changes nothing; keeps the first check-in time
+export async function setCheckIn(ticketId, checkedIn) {
   const now = new Date();
-  const updated = await col.findOneAndUpdate(
-    { _id: current._id },
-    { $set: { is_checked_in: next, checked_in_at: next ? now : null, updated_at: now } },
+  const doc = await (await registrations()).findOneAndUpdate(
+    { ticket_id: ticketId.trim().toUpperCase() },
+    [
+      {
+        $set: {
+          is_checked_in: checkedIn,
+          checked_in_at: checkedIn ? { $ifNull: ['$checked_in_at', now] } : null,
+          updated_at: now,
+        },
+      },
+    ],
     { returnDocument: 'after' }
   );
-  return toFrontend(updated);
+  return doc ? toFrontend(doc) : null;
 }
 
 export async function deleteRegistration(ticketId) {
@@ -142,37 +133,24 @@ export async function countRegistrations() {
   return (await registrations()).countDocuments();
 }
 
-export async function calculateStats() {
-  const all = await listRegistrations();
-  const total = all.length;
-  const checkedIn = all.filter((r) => r.isCheckedIn).length;
-
-  const regionCounts = {};
-  for (const r of all) {
-    const reg = r.region || 'depok';
-    regionCounts[reg] = (regionCounts[reg] || 0) + 1;
-  }
-
-  const komsel = (word) => all.filter((r) => (r.komselStatus || '').toLowerCase().includes(word)).length;
-  const withKomsel = komsel('sudah');
-  const withoutKomsel = komsel('belum');
-
-  return {
-    total,
-    checkedIn,
-    notCheckedIn: total - checkedIn,
-    attendanceRate: total > 0 ? Math.round((checkedIn / total) * 100) : 0,
-    regionCounts,
-    komselStats: {
-      withKomsel,
-      withoutKomsel,
-      alumniTamu: Math.max(0, total - (withKomsel + withoutKomsel)),
-    },
-  };
+// Admin accounts: { name, email, password: bcrypt hash } in the `users` collection
+export async function findAdminUser(login) {
+  const exact = exactIgnoreCase(login);
+  return (await getDb()).collection('users').findOne({ $or: [{ email: exact }, { name: exact }] });
 }
 
-// Admin accounts live in the Laravel `users` collection (bcrypt hashes)
-export async function findAdminUser(login) {
-  const exact = new RegExp(`^${escapeRegex(login)}$`, 'i');
-  return (await getDb()).collection('users').findOne({ $or: [{ email: exact }, { name: exact }] });
+export async function upsertAdminUser({ name, email, passwordHash }) {
+  const now = new Date();
+  await (await getDb()).collection('users').updateOne(
+    { email: exactIgnoreCase(email) },
+    { $set: { name, email, password: passwordHash, updated_at: now }, $setOnInsert: { created_at: now } },
+    { upsert: true }
+  );
+}
+
+// For one-off scripts, so the process can exit
+export async function closeDb() {
+  await client?.close();
+  client = null;
+  dbPromise = null;
 }

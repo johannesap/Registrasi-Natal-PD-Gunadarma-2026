@@ -1,4 +1,4 @@
-# Laravel is local-only (its .env holds the Atlas password); production API is api/ + server/
+# Old Laravel backend (its .env holds the Atlas password); production API is api/ + server/
 backend
 server/data
 .env*

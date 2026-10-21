@@ -1,69 +1,9 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import apiRouter from './routes/api.js';
+// Local API server for `npm run dev` (Vite proxies /api here). Production runs server/app.js on Vercel.
+import 'dotenv/config';
+import app from './app.js';
 
-dotenv.config();
-
-const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(
-  cors({
-    origin: '*',
-    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  })
-);
-app.use(express.json());
-
-// Request logging middleware
-app.use((req, res, next) => {
-  const start = Date.now();
-  res.on('finish', () => {
-    const duration = Date.now() - start;
-    console.log(`[HTTP] ${req.method} ${req.originalUrl} -> ${res.statusCode} (${duration}ms)`);
-  });
-  next();
+app.listen(PORT, () => {
+  console.log(`API lokal berjalan di http://localhost:${PORT}/api (database: ${process.env.MONGODB_DATABASE})`);
 });
-
-// Mount API routes under /api
-app.use('/api', apiRouter);
-
-// Root welcome endpoint
-app.get('/', (req, res) => {
-  res.json({
-    event: 'Natal Persekutuan Doa Universitas Gunadarma 2026',
-    tagline: 'Merayakan Kasih, Menyalakan Harapan',
-    serverStatus: 'Online',
-    apiHealthUrl: '/api/health',
-    endpoints: [
-      'POST /api/register',
-      'GET /api/registrations',
-      'GET /api/registrations/:ticketId',
-      'PATCH /api/registrations/:ticketId/checkin',
-      'DELETE /api/registrations/:ticketId',
-      'POST /api/admin/login',
-      'GET /api/stats',
-      'GET /api/export',
-    ],
-  });
-});
-
-// Vercel imports the app as a serverless function; listen only when run locally
-if (!process.env.VERCEL) app.listen(PORT, () => {
-  console.log(`
-============================================================
-  🌟 NATAL PERSEKUTUAN DOA UNIVERSITAS GUNADARMA 2026 🌟
-             Backend Server Berhasil Berjalan!
-============================================================
-  🚀 Server URL       : http://localhost:${PORT}
-  📡 API Health Check : http://localhost:${PORT}/api/health
-  📋 Data Registrasi  : http://localhost:${PORT}/api/registrations
-  📊 Statistik Acara  : http://localhost:${PORT}/api/stats
-============================================================
-  `);
-});
-
-export default app;

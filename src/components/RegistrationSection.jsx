@@ -12,29 +12,18 @@ import {
   Sparkles,
   CheckCircle2,
   Download,
-  Share2,
   Ticket,
   Clock,
   ShieldCheck,
   ArrowLeft,
   Send,
   MessageSquare,
-  Check,
   ExternalLink,
   AlertCircle,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { addRegistration } from '../utils/storage';
-
-const REGIONS = [
-  { id: 'depok', name: 'Depok' },
-  { id: 'kalimalang', name: 'Kalimalang' },
-  { id: 'karawaci', name: 'Karawaci' },
-  { id: 'cengkareng', name: 'Cengkareng' },
-  { id: 'simatupang', name: 'Simatupang' },
-  { id: 'salemba', name: 'Salemba' },
-  { id: 'alumni_tamu', name: 'Alumni / Tamu' },
-];
+import { REGIONS, regionName as getRegionName } from '../utils/regions';
 
 const KOMSEL_OPTIONS = [
   'Sudah memiliki Komsel (Tuliskan nama Kakak Komsel di bawah)',
@@ -60,12 +49,8 @@ export default function RegistrationSection({ onBackToHero }) {
   const [ticketId, setTicketId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
-  const [dispatchInfo, setDispatchInfo] = useState({
-    emailSent: false,
-    whatsappSent: false,
-    timestamp: '',
-    whatsappUrl: '',
-  });
+  const [whatsappUrl, setWhatsappUrl] = useState('');
+  const [alreadyRegistered, setAlreadyRegistered] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -97,10 +82,6 @@ export default function RegistrationSection({ onBackToHero }) {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const getRegionName = (id) => {
-    const found = REGIONS.find((r) => r.id === id);
-    return found ? found.name : id;
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -108,16 +89,8 @@ export default function RegistrationSection({ onBackToHero }) {
     setSubmitError('');
 
     try {
-      // Generate initial ticket code
-      const randomCode =
-        'NATAL-UG-' +
-        Math.floor(1000 + Math.random() * 9000) +
-        '-' +
-        (formData.npm.slice(-4) || '2026');
-
-      // Submit registration to backend API (throws if the server did not save it)
+      // The server makes the ticket code and WhatsApp link; this throws if it did not save
       const registered = await addRegistration({
-        ticketId: randomCode,
         fullName: formData.fullName.trim(),
         npm: formData.npm.trim(),
         email: formData.email.trim(),
@@ -129,53 +102,9 @@ export default function RegistrationSection({ onBackToHero }) {
         session: formData.session,
       });
 
-      const actualTicketId = registered?.ticketId || randomCode;
-      setTicketId(actualTicketId);
-
-      // Clean WhatsApp phone number (convert 08xxx to 628xxx)
-      let cleanWa = formData.whatsapp.replace(/\D/g, '');
-      if (cleanWa.startsWith('0')) {
-        cleanWa = '62' + cleanWa.slice(1);
-      } else if (!cleanWa.startsWith('62')) {
-        cleanWa = '62' + cleanWa;
-      }
-
-      // Generate formatted official WhatsApp message
-      const waMessage =
-        `✨ *TIKET RESMI — NATAL PERSEKUTUAN DOA UNIVERSITAS GUNADARMA 2026* ✨\n` +
-        `_"Merayakan Kasih, Menyalakan Harapan"_\n\n` +
-        `Shalom, *${formData.fullName.trim()}*!\n` +
-        `Pendaftaran Ibadah & Perayaan Natal Anda telah *BERHASIL TERKONFIRMASI*.\n\n` +
-        `📌 *DETAIL E-TICKET ANDA:*\n` +
-        `• Kode Tiket: *${actualTicketId}*\n` +
-        `• NPM: *${formData.npm}*\n` +
-        `• Email: *${formData.email}*\n` +
-        `• Region Kampus: *${getRegionName(formData.region)}*\n` +
-        `• Kakak Komsel: *${formData.mentorName || '-'}*\n` +
-        `• Jurusan: *${formData.faculty || 'Universitas Gunadarma'}*\n\n` +
-        `🗓️ *WAKTU & TEMPAT:*\n` +
-        `• Tanggal: Jumat, 18 Desember 2026\n` +
-        `• Pukul: 16.30 WIB - Selesai\n` +
-        `• Lokasi: Auditorium Kampus Gunadarma\n\n` +
-        `_Simpan pesan dan kode tiket ini untuk ditunjukkan saat registrasi ulang di pintu masuk auditorium._\n\n` +
-        `Sampai berjumpa dalam sukacita Natal! Tuhan Yesus memberkati. 🙏✨`;
-
-      const generatedWaUrl =
-        registered?.dispatch?.whatsappUrl ||
-        `https://api.whatsapp.com/send?phone=${cleanWa}&text=${encodeURIComponent(waMessage)}`;
-
-      const currentTime = new Date().toLocaleTimeString('id-ID', {
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-
-      setDispatchInfo({
-        emailSent: true,
-        whatsappSent: true,
-        timestamp: currentTime,
-        whatsappUrl: generatedWaUrl,
-      });
-
+      setTicketId(registered.ticketId);
+      setWhatsappUrl(registered.dispatch.whatsappUrl);
+      setAlreadyRegistered(Boolean(registered.alreadyRegistered));
       setSubmitted(true);
 
       // Trigger festive golden confetti celebration
@@ -498,7 +427,7 @@ export default function RegistrationSection({ onBackToHero }) {
 
             <div className="flex items-center justify-center gap-2 text-xs text-gray-400 pt-1">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>Tiket resmi akan dikirim otomatis ke WhatsApp & Email Anda</span>
+              <span>Kode tiket langsung muncul setelah Anda mendaftar</span>
             </div>
           </form>
         </motion.div>
@@ -698,53 +627,22 @@ export default function RegistrationSection({ onBackToHero }) {
               </h3>
 
               <p className="text-xs sm:text-sm text-gray-300 font-light mb-5">
-                Terima kasih, <strong className="text-white">{formData.fullName}</strong>. Tiket resmi Anda telah dibuat dan otomatis dikirimkan ke kontak terdaftar.
+                Terima kasih, <strong className="text-white">{formData.fullName}</strong>.{' '}
+                {alreadyRegistered
+                  ? 'NPM dan email ini sudah terdaftar sebelumnya, jadi ini tiket Anda yang lama.'
+                  : 'Pendaftaran Anda sudah tersimpan.'}
               </p>
 
-              {/* AUTOMATIC DISPATCH STATUS CARD */}
-              <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-950/40 via-neutral-900/80 to-emerald-950/40 border border-emerald-400/30 text-left space-y-3 mb-5">
-                <div className="flex items-center gap-2 text-xs font-semibold text-emerald-300 uppercase tracking-wider">
+              {/* Tickets are not sent automatically: tell people how to keep theirs */}
+              <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-950/40 via-neutral-900/80 to-emerald-950/40 border border-emerald-400/30 text-left text-xs text-gray-300 space-y-1.5 mb-5">
+                <div className="flex items-center gap-2 font-semibold text-emerald-300 uppercase tracking-wider">
                   <Send className="w-3.5 h-3.5" />
-                  <span>Status Pengiriman Otomatis ({dispatchInfo.timestamp})</span>
+                  <span>Simpan Tiket Anda</span>
                 </div>
-
-                {/* WhatsApp Status */}
-                <div className="flex items-center justify-between text-xs border-b border-white/10 pb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">
-                      <Phone className="w-3 h-3" />
-                    </div>
-                    <div>
-                      <span className="text-gray-300 block font-medium">WhatsApp: {formData.whatsapp}</span>
-                      <span className="text-[10px] text-emerald-400 flex items-center gap-1">
-                        <Check className="w-3 h-3" /> Tiket & QR Link Otomatis Terkirim
-                      </span>
-                    </div>
-                  </div>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 font-semibold">
-                    SENT
-                  </span>
-                </div>
-
-                {/* Email Status */}
-                <div className="flex items-center justify-between text-xs pt-1">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400">
-                      <Mail className="w-3 h-3" />
-                    </div>
-                    <div>
-                      <span className="text-gray-300 block font-medium truncate max-w-[200px] sm:max-w-[260px]">
-                        Email: {formData.email}
-                      </span>
-                      <span className="text-[10px] text-amber-300 flex items-center gap-1">
-                        <Check className="w-3 h-3" /> Tiket Digital Terkirim ke Inbox
-                      </span>
-                    </div>
-                  </div>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/30 font-semibold">
-                    SENT
-                  </span>
-                </div>
+                <p>
+                  Tekan tombol hijau di bawah untuk membuka WhatsApp, lalu kirim pesan tiket itu ke nomor Anda sendiri.
+                  Anda juga bisa mencetak atau screenshot halaman ini. Tunjukkan kode tiket di pintu masuk.
+                </p>
               </div>
 
               {/* Pass Summary Details */}
@@ -771,7 +669,7 @@ export default function RegistrationSection({ onBackToHero }) {
               <div className="space-y-2.5">
                 {/* 1-Click Open in WhatsApp */}
                 <a
-                  href={dispatchInfo.whatsappUrl}
+                  href={whatsappUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full py-3 rounded-xl font-semibold text-emerald-950 bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-400 hover:brightness-105 text-xs tracking-wider uppercase flex items-center justify-center gap-2 cursor-pointer transition-all shadow-[0_0_20px_rgba(52,211,153,0.3)]"

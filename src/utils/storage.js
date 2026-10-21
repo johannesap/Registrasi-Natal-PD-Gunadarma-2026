@@ -1,8 +1,16 @@
-const STORAGE_KEY = 'natal_pd_registrations_2026';
-const AUTH_KEY = 'natal_pd_admin_auth_2026';
+import { regionName } from './regions';
+
 const AUTH_TOKEN_KEY = 'natal_pd_admin_token_2026';
 
 const API_BASE = '/api';
+
+// Older versions cached every participant (name, email, WhatsApp) in the browser; wipe what they left behind
+try {
+  localStorage.removeItem('natal_pd_registrations_2026');
+  localStorage.removeItem('natal_pd_admin_auth_2026');
+} catch {
+  // storage blocked: nothing to clean
+}
 
 // Calls the API with the admin token and throws the server's message on any failure
 const apiFetch = async (path, { method = 'GET', body } = {}) => {
@@ -30,201 +38,56 @@ const apiFetch = async (path, { method = 'GET', body } = {}) => {
 
   const json = await res.json().catch(() => null);
   if (!res.ok || !json?.success) {
-    const err = new Error(json?.message || 'Terjadi kesalahan pada server. Silakan coba lagi.');
+    const fallback =
+      res.status === 429
+        ? 'Terlalu banyak pendaftaran dari jaringan ini. Tunggu 1 menit lalu coba lagi.'
+        : 'Terjadi kesalahan pada server. Silakan coba lagi.';
+    const err = new Error(json?.message || fallback);
     err.status = res.status;
     throw err;
   }
   return json;
 };
 
-// Initial seed data for fallback if offline
-const INITIAL_REGISTRATIONS = [
-  {
-    ticketId: 'NATAL-UG-4102-1890',
-    fullName: 'Jonathan Kevin Situmorang',
-    npm: '50421890',
-    email: 'jonathan.kevin@gmail.com',
-    whatsapp: '081298765432',
-    region: 'depok',
-    komselStatus: 'Sudah memiliki Komsel (Tuliskan nama Kakak Komsel di bawah)',
-    mentorName: 'Kak Daniel Simanjuntak',
-    faculty: 'Teknik Informatika / FTI',
-    session: 'Sesi Utama (16.30 WIB - Selesai)',
-    registeredAt: '2026-10-01 14:32',
-    isCheckedIn: true,
-  },
-  {
-    ticketId: 'NATAL-UG-5289-4412',
-    fullName: 'Maria Gabriella Samosir',
-    npm: '20224412',
-    email: 'gabriella.maria@gunadarma.ac.id',
-    whatsapp: '081345678910',
-    region: 'kalimalang',
-    komselStatus: 'Sudah memiliki Komsel (Tuliskan nama Kakak Komsel di bawah)',
-    mentorName: 'Kak Yohana Priskila',
-    faculty: 'Sistem Informasi / FIKTI',
-    session: 'Sesi Utama (16.30 WIB - Selesai)',
-    registeredAt: '2026-10-01 16:45',
-    isCheckedIn: false,
-  },
-  {
-    ticketId: 'NATAL-UG-6714-9021',
-    fullName: 'Christian Timothy Siregar',
-    npm: '10129021',
-    email: 'christian.timothy@gmail.com',
-    whatsapp: '085712349876',
-    region: 'karawaci',
-    komselStatus: 'Belum memiliki Komsel (Rindu bergabung dengan Komsel PD)',
-    mentorName: '-',
-    faculty: 'Manajemen / FE',
-    session: 'Sesi Utama (16.30 WIB - Selesai)',
-    registeredAt: '2026-10-02 09:15',
-    isCheckedIn: true,
-  },
-  {
-    ticketId: 'NATAL-UG-7831-3310',
-    fullName: 'Rachel Michelle Hutapea',
-    npm: '30423310',
-    email: 'rachel.hutapea@gmail.com',
-    whatsapp: '081287654321',
-    region: 'depok',
-    komselStatus: 'Sudah memiliki Komsel (Tuliskan nama Kakak Komsel di bawah)',
-    mentorName: 'Kak Samuel Pasaribu',
-    faculty: 'Psikologi / FPSI',
-    session: 'Sesi Utama (16.30 WIB - Selesai)',
-    registeredAt: '2026-10-02 11:20',
-    isCheckedIn: false,
-  },
-  {
-    ticketId: 'NATAL-UG-8920-7761',
-    fullName: 'David Samuel Tampubolon',
-    npm: '51427761',
-    email: 'david.samuel@gunadarma.ac.id',
-    whatsapp: '087812903456',
-    region: 'cengkareng',
-    komselStatus: 'Belum memiliki Komsel (Rindu bergabung dengan Komsel PD)',
-    mentorName: '-',
-    faculty: 'Teknik Elektro / FTI',
-    session: 'Sesi Utama (16.30 WIB - Selesai)',
-    registeredAt: '2026-10-03 13:05',
-    isCheckedIn: false,
-  },
-  {
-    ticketId: 'NATAL-UG-9145-2026',
-    fullName: 'Grace Stefanie Panjaitan',
-    npm: '21225510',
-    email: 'grace.stefanie@gmail.com',
-    whatsapp: '082198761234',
-    region: 'simatupang',
-    komselStatus: 'Sudah memiliki Komsel (Tuliskan nama Kakak Komsel di bawah)',
-    mentorName: 'Kak Grace Novita',
-    faculty: 'Ilmu Komunikasi / FIKOM',
-    session: 'Sesi Utama (16.30 WIB - Selesai)',
-    registeredAt: '2026-10-03 15:50',
-    isCheckedIn: false,
-  },
-];
+// All participants, straight from the server (admin only)
+export const fetchRegistrations = async () => (await apiFetch('/registrations')).data;
 
-// Helper: Read from LocalStorage Cache
-export const getLocalRegistrations = () => {
-  try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    if (!data) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_REGISTRATIONS));
-      return INITIAL_REGISTRATIONS;
-    }
-    return JSON.parse(data);
-  } catch (error) {
-    console.error('Failed to read registrations from storage', error);
-    return INITIAL_REGISTRATIONS;
-  }
-};
-
-// Helper: Write to LocalStorage Cache
-export const saveLocalRegistrations = (registrations) => {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(registrations));
-  } catch (error) {
-    console.error('Failed to save registrations to storage', error);
-  }
-};
-
-// Synchronous getter for instant render (falls back to cache)
-export const getRegistrations = () => {
-  return getLocalRegistrations();
-};
-
-// Async fetcher from backend API with local cache synchronization (throws on failure)
-export const fetchRegistrations = async (filterParams = {}) => {
-  const query = new URLSearchParams(filterParams).toString();
-  const json = await apiFetch(query ? `/registrations?${query}` : '/registrations');
-  saveLocalRegistrations(json.data);
-  return json.data;
-};
-
-// Register participant (Calls backend API POST /api/register; throws if not saved on the server)
+// Register participant; throws if the server did not save it
 export const addRegistration = async (registration) => {
   const result = await apiFetch('/register', { method: 'POST', body: registration });
-
-  const current = getLocalRegistrations();
-  const updated = [result.data, ...current.filter((r) => r.ticketId !== result.data.ticketId)];
-  saveLocalRegistrations(updated);
-  return {
-    ...result.data,
-    dispatch: result.dispatch,
-    serverSynced: true,
-  };
+  return { ...result.data, dispatch: result.dispatch, alreadyRegistered: result.alreadyRegistered };
 };
 
-// Toggle Check-in status (Calls backend API PATCH /api/registrations/:ticketId/checkin)
-export const toggleCheckIn = async (ticketId) => {
-  const json = await apiFetch(`/registrations/${encodeURIComponent(ticketId)}/checkin`, {
-    method: 'PATCH',
-  });
+// Set check-in to the wanted state and return the updated participant
+export const setCheckIn = async (ticketId, checkedIn) =>
+  (
+    await apiFetch(`/registrations/${encodeURIComponent(ticketId)}/checkin`, {
+      method: 'PATCH',
+      body: { checkedIn },
+    })
+  ).data;
 
-  const current = getLocalRegistrations();
-  const updated = current.map((item) =>
-    item.ticketId === ticketId
-      ? { ...item, isCheckedIn: json.data.isCheckedIn, checkedInAt: json.data.checkedInAt }
-      : item
-  );
-  saveLocalRegistrations(updated);
-  return updated;
-};
-
-// Delete participant registration (Calls backend API DELETE /api/registrations/:ticketId)
 export const deleteRegistration = async (ticketId) => {
   await apiFetch(`/registrations/${encodeURIComponent(ticketId)}`, { method: 'DELETE' });
-
-  const current = getLocalRegistrations();
-  const updated = current.filter((item) => item.ticketId !== ticketId);
-  saveLocalRegistrations(updated);
-  return updated;
 };
 
 // Admin Authentication State
 export const isAdminAuthenticated = () => {
   try {
-    return localStorage.getItem(AUTH_KEY) === 'true';
+    return Boolean(localStorage.getItem(AUTH_TOKEN_KEY));
   } catch {
     return false;
   }
 };
 
 export const loginAdmin = async (username, password) => {
-  const cleanUser = (username || '').trim().toLowerCase();
-  const cleanPass = (password || '').trim();
-
   try {
     const data = await apiFetch('/admin/login', {
       method: 'POST',
-      body: { username: cleanUser, password: cleanPass },
+      body: { username: (username || '').trim().toLowerCase(), password: (password || '').trim() },
     });
-    localStorage.setItem(AUTH_KEY, 'true');
-    if (data.token) {
-      localStorage.setItem(AUTH_TOKEN_KEY, data.token);
-    }
-    return { success: true, source: data.admin?.source || 'MongoDB' };
+    localStorage.setItem(AUTH_TOKEN_KEY, data.token);
+    return { success: true };
   } catch (err) {
     return { success: false, message: err.message };
   }
@@ -232,12 +95,20 @@ export const loginAdmin = async (username, password) => {
 
 export const logoutAdmin = () => {
   try {
-    localStorage.removeItem(AUTH_KEY);
     localStorage.removeItem(AUTH_TOKEN_KEY);
   } catch (error) {
     console.error(error);
   }
 };
+
+// One quoted CSV cell; a leading = + - @ gets a ' so Excel shows it as text instead of running a formula
+const csvCell = (value) =>
+  `"${String(value ?? '')
+    .replace(/^[=+\-@\t\r]/, "'$&")
+    .replace(/"/g, '""')}"`;
+
+// Digits only, written as ="..." so Excel keeps leading zeros of NPM and phone numbers
+const csvDigits = (value) => `="${String(value ?? '').replace(/\D/g, '')}"`;
 
 // Export to CSV Function
 export const exportRegistrationsToCSV = (registrations) => {
@@ -253,27 +124,28 @@ export const exportRegistrationsToCSV = (registrations) => {
     'Nama Kakak Komsel',
     'Jurusan/Fakultas',
     'Status Check-In',
+    'Waktu Check-In',
     'Waktu Registrasi',
   ];
 
   const rows = registrations.map((r, idx) => [
     idx + 1,
-    `"${r.ticketId || ''}"`,
-    `"${(r.fullName || '').replace(/"/g, '""')}"`,
-    `'${r.npm || ''}`,
-    `"${r.email || ''}"`,
-    `'${r.whatsapp || ''}`,
-    `"${r.region || ''}"`,
-    `"${(r.komselStatus || '').replace(/"/g, '""')}"`,
-    `"${(r.mentorName || '-').replace(/"/g, '""')}"`,
-    `"${(r.faculty || '-').replace(/"/g, '""')}"`,
+    csvCell(r.ticketId),
+    csvCell(r.fullName),
+    csvDigits(r.npm),
+    csvCell(r.email),
+    csvDigits(r.whatsapp),
+    csvCell(regionName(r.region)),
+    csvCell(r.komselStatus),
+    csvCell(r.mentorName || '-'),
+    csvCell(r.faculty || '-'),
     r.isCheckedIn ? 'Hadir' : 'Belum Hadir',
-    `"${r.registeredAt || ''}"`,
+    csvCell(r.checkedInAt || '-'),
+    csvCell(r.registeredAt),
   ]);
 
   const csvContent =
-    '\uFEFF' +
-    [headers.join(','), ...rows.map((row) => row.join(','))].join('\r\n');
+    '﻿' + [headers.join(','), ...rows.map((row) => row.join(','))].join('\r\n');
 
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
@@ -286,4 +158,5 @@ export const exportRegistrationsToCSV = (registrations) => {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 };
