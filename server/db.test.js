@@ -10,7 +10,8 @@ const skip = !process.env.MONGODB_URI
   : (process.env.MONGODB_DATABASE || LIVE_DB) === LIVE_DB && 'refusing to write test data to the live database';
 
 const { default: app } = await import('./app.js');
-const { setCheckIn, deleteRegistration, closeDb } = await import('./db.js');
+const { setCheckIn, deleteRegistration, closeDb, createUser, deleteUser, countAdmins } = await import('./db.js');
+const { default: bcrypt } = await import('bcryptjs');
 
 const person = {
   fullName: 'Tes Otomatis',
@@ -38,12 +39,45 @@ before(() => {
   base = `http://127.0.0.1:${server.address().port}/api`;
 });
 
+const TEST_PW = 'tes-password-123';
+const testUserIds = [];
+
 after(async () => {
   if (skip) return;
   if (ticketId) await deleteRegistration(ticketId);
+  for (const id of testUserIds) await deleteUser(id);
   await closeDb();
   server.close();
 });
+
+async function makeUser(name, role) {
+  const user = await createUser({
+    name,
+    email: `${name}@example.com`,
+    role,
+    passwordHash: await bcrypt.hash(TEST_PW, 4),
+  });
+  testUserIds.push(user.id);
+  return user;
+}
+
+const loginToken = async (name, password = TEST_PW) =>
+  (
+    await (
+      await fetch(`${base}/admin/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: name, password }),
+      })
+    ).json()
+  ).token;
+
+const authed = (path, token, method = 'GET', body) =>
+  fetch(`${base}${path}`, {
+    method,
+    headers: { Authorization: `Bearer ${token}`, ...(body && { 'Content-Type': 'application/json' }) },
+    body: body && JSON.stringify(body),
+  });
 
 test('registering again with the same NPM, email and phone returns the same ticket', { skip }, async () => {
   const first = await (await register(person)).json();
@@ -84,4 +118,53 @@ test('checking in twice keeps the first check-in time', { skip }, async () => {
   const undone = await setCheckIn(ticketId, false);
   assert.equal(undone.isCheckedIn, false);
   assert.equal(undone.checkedInAt, null);
+});
+
+test('sekretariat sees registrations but not accounts; admin the other way round', { skip }, async () => {
+  await makeUser('tes-sek', 'sekretariat');
+  await makeUser('tes-adm', 'admin');
+  const sek = await loginToken('tes-sek');
+  const adm = await loginToken('tes-adm');
+
+  assert.equal((await authed('/registrations', sek)).status, 200);
+  assert.equal((await authed('/users', sek)).status, 403);
+  assert.equal((await authed('/users', adm)).status, 200);
+  assert.equal((await authed('/registrations', adm)).status, 403);
+});
+
+test('admin creates, edits and deletes accounts; changes apply at once', { skip }, async () => {
+  const adm = await loginToken('tes-adm');
+  const account = { name: 'tes-baru', email: 'tes-baru@example.com', role: 'sekretariat', password: 'password-baru-1' };
+
+  const created = await (await authed('/users', adm, 'POST', account)).json();
+  assert.equal(created.success, true);
+  testUserIds.push(created.data.id);
+  assert.equal(created.data.password, undefined, 'never send the hash');
+  assert.equal((await authed('/users', adm, 'POST', account)).status, 409, 'duplicate username');
+
+  const baru = await loginToken('tes-baru', 'password-baru-1');
+  assert.equal((await authed('/registrations', baru)).status, 200);
+
+  // Promote to admin: the old token now gets the new role's rights, without logging in again
+  const edited = await authed(`/users/${created.data.id}`, adm, 'PATCH', { ...account, role: 'admin', password: '' });
+  assert.equal(edited.status, 200);
+  assert.equal((await authed('/registrations', baru)).status, 403);
+
+  assert.equal((await authed(`/users/${created.data.id}`, adm, 'DELETE')).status, 200);
+  assert.equal((await authed('/users', baru)).status, 401, 'deleted account loses access');
+
+  const self = testUserIds[1]; // tes-adm
+  assert.equal((await authed(`/users/${self}`, adm, 'DELETE')).status, 409, 'cannot delete own account');
+});
+
+test('the last admin cannot be demoted', { skip }, async (t) => {
+  if ((await countAdmins()) !== 1) return t.skip('other admin accounts exist in this database');
+  const adm = await loginToken('tes-adm');
+  const res = await authed(`/users/${testUserIds[1]}`, adm, 'PATCH', {
+    name: 'tes-adm',
+    email: 'tes-adm@example.com',
+    role: 'sekretariat',
+    password: '',
+  });
+  assert.equal(res.status, 409);
 });

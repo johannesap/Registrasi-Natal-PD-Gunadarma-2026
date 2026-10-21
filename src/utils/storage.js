@@ -71,14 +71,27 @@ export const deleteRegistration = async (ticketId) => {
   await apiFetch(`/registrations/${encodeURIComponent(ticketId)}`, { method: 'DELETE' });
 };
 
-// Admin Authentication State
-export const isAdminAuthenticated = () => {
+// Role from the token ('admin' | 'sekretariat'), only to pick the screen; the server checks it on every request
+export const currentRole = () => {
   try {
-    return Boolean(localStorage.getItem(AUTH_TOKEN_KEY));
+    const payload = localStorage.getItem(AUTH_TOKEN_KEY).split('.')[0];
+    return JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/'))).r || null;
   } catch {
-    return false;
+    return null;
   }
 };
+
+// Tokens from before roles existed have no role: those users simply log in again
+export const isAdminAuthenticated = () => Boolean(currentRole());
+
+// Panitia accounts (admin only)
+export const fetchUsers = async () => (await apiFetch('/users')).data;
+
+// Creates when id is empty, otherwise updates; returns { data, message }
+export const saveUser = async (id, user) =>
+  apiFetch(id ? `/users/${id}` : '/users', { method: id ? 'PATCH' : 'POST', body: user });
+
+export const deleteUser = async (id) => (await apiFetch(`/users/${id}`, { method: 'DELETE' })).message;
 
 export const loginAdmin = async (username, password) => {
   try {

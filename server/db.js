@@ -1,4 +1,4 @@
-import { MongoClient } from 'mongodb';
+import { MongoClient, ObjectId } from 'mongodb';
 
 // Documents keep the snake_case fields the database already has (first written by the old Laravel backend)
 let dbPromise = null;
@@ -132,18 +132,66 @@ export async function countRegistrations() {
   return (await registrations()).countDocuments();
 }
 
-// Admin accounts: { name, email, password: bcrypt hash } in the `users` collection
+// Panitia accounts: { name, email, role: 'admin' | 'sekretariat', password: bcrypt hash } in `users`
+const users = async () => (await getDb()).collection('users');
+
+// Account as sent to the browser: never the password hash
+const toUser = (d) => ({ id: String(d._id), name: d.name, email: d.email, role: d.role || null });
+
 export async function findAdminUser(login) {
   const exact = exactIgnoreCase(login);
-  return (await getDb()).collection('users').findOne({ $or: [{ email: exact }, { name: exact }] });
+  return (await users()).findOne({ $or: [{ email: exact }, { name: exact }] });
 }
 
-export async function upsertAdminUser({ name, email, passwordHash }) {
+export async function listUsers() {
+  return (await (await users()).find().sort({ name: 1 }).toArray()).map(toUser);
+}
+
+export async function findUserById(id) {
+  if (!ObjectId.isValid(id)) return null;
+  const doc = await (await users()).findOne({ _id: new ObjectId(id) });
+  return doc ? toUser(doc) : null;
+}
+
+// true when another account (not excludeId) already uses this username or email
+export async function userConflict({ name, email }, excludeId) {
+  const filter = { $or: [{ name: exactIgnoreCase(name) }, { email: exactIgnoreCase(email) }] };
+  if (excludeId) filter._id = { $ne: new ObjectId(excludeId) };
+  return Boolean(await (await users()).findOne(filter));
+}
+
+export async function createUser({ name, email, role, passwordHash }) {
   const now = new Date();
-  await (await getDb()).collection('users').updateOne(
-    // match by name too, so a new email updates the same admin instead of creating a second one
+  const doc = { name, email, role, password: passwordHash, created_at: now, updated_at: now };
+  const { insertedId } = await (await users()).insertOne(doc);
+  return toUser({ ...doc, _id: insertedId });
+}
+
+// fields: name, email, role and optionally password (already hashed)
+export async function updateUser(id, fields) {
+  const doc = await (await users()).findOneAndUpdate(
+    { _id: new ObjectId(id) },
+    { $set: { ...fields, updated_at: new Date() } },
+    { returnDocument: 'after' }
+  );
+  return doc ? toUser(doc) : null;
+}
+
+export async function deleteUser(id) {
+  const { deletedCount } = await (await users()).deleteOne({ _id: new ObjectId(id) });
+  return deletedCount > 0;
+}
+
+export async function countAdmins() {
+  return (await users()).countDocuments({ role: 'admin' });
+}
+
+export async function upsertAdminUser({ name, email, role, passwordHash }) {
+  const now = new Date();
+  await (await users()).updateOne(
+    // match by name too, so a new email updates the same account instead of creating a second one
     { $or: [{ email: exactIgnoreCase(email) }, { name: exactIgnoreCase(name) }] },
-    { $set: { name, email, password: passwordHash, updated_at: now }, $setOnInsert: { created_at: now } },
+    { $set: { name, email, role, password: passwordHash, updated_at: now }, $setOnInsert: { created_at: now } },
     { upsert: true }
   );
 }

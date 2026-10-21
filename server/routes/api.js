@@ -12,6 +12,13 @@ import {
   deleteRegistration,
   countRegistrations,
   findAdminUser,
+  listUsers,
+  findUserById,
+  userConflict,
+  createUser,
+  updateUser,
+  deleteUser,
+  countAdmins,
 } from '../db.js';
 
 const router = express.Router();
@@ -26,32 +33,44 @@ const TOKEN_TTL_MS = 12 * 60 * 60 * 1000;
 const sign = (payload) =>
   crypto.createHmac('sha256', process.env.ADMIN_TOKEN_SECRET).update(payload).digest('base64url');
 
-function issueToken(username) {
-  const payload = Buffer.from(JSON.stringify({ u: username, exp: Date.now() + TOKEN_TTL_MS })).toString(
-    'base64url'
-  );
+// admin: manages accounts only. sekretariat: manages registrations only.
+const ROLES = ['admin', 'sekretariat'];
+
+function issueToken(user) {
+  // r only tells the browser which screen to show; the server re-reads the role from the database
+  const payload = Buffer.from(
+    JSON.stringify({ u: user.name, r: user.role, exp: Date.now() + TOKEN_TTL_MS })
+  ).toString('base64url');
   return `${payload}.${sign(payload)}`;
 }
 
-function requireAdmin(req, res, next) {
+// Valid token AND the account still exists with this role, so deleting or demoting an account takes effect at once
+const requireRole = (role) => async (req, res, next) => {
   const [payload, sig] = (req.get('authorization') || '').replace(/^Bearer\s+/i, '').split('.');
-  let valid = false;
+  let claims = null;
   if (process.env.ADMIN_TOKEN_SECRET && payload && sig) {
     const expected = Buffer.from(sign(payload));
     const given = Buffer.from(sig);
-    valid =
-      expected.length === given.length &&
-      crypto.timingSafeEqual(expected, given) &&
-      JSON.parse(Buffer.from(payload, 'base64url').toString()).exp > Date.now();
+    if (expected.length === given.length && crypto.timingSafeEqual(expected, given)) {
+      claims = JSON.parse(Buffer.from(payload, 'base64url').toString());
+    }
   }
-  if (!valid) {
+  const user = claims && claims.exp > Date.now() ? await findAdminUser(claims.u) : null;
+  if (!user) {
     return res.status(401).json({
       success: false,
       message: 'Sesi admin tidak valid atau sudah berakhir. Silakan login ulang.',
     });
   }
+  if (user.role !== role) {
+    return res.status(403).json({ success: false, message: 'Akun ini tidak punya akses ke fitur ini.' });
+  }
+  req.user = user;
   next();
-}
+};
+
+const sekretariatOnly = requireRole('sekretariat');
+const adminOnly = requireRole('admin');
 
 // ==========================================
 // 1. HEALTH
@@ -71,7 +90,7 @@ router.get('/health', async (req, res) => {
 // ==========================================
 
 // GET /api/registrations - all participants (admin)
-router.get('/registrations', requireAdmin, async (req, res) => {
+router.get('/registrations', sekretariatOnly, async (req, res) => {
   const list = await listRegistrations();
   res.json({ success: true, total: list.length, data: list });
 });
@@ -185,7 +204,7 @@ router.post('/register', async (req, res) => {
 });
 
 // PATCH /api/registrations/:ticketId/checkin  body: { checkedIn: true|false }
-router.patch('/registrations/:ticketId/checkin', requireAdmin, async (req, res) => {
+router.patch('/registrations/:ticketId/checkin', sekretariatOnly, async (req, res) => {
   const checkedIn = req.body?.checkedIn;
   if (typeof checkedIn !== 'boolean') {
     return res.status(422).json({ success: false, message: 'checkedIn harus true atau false.' });
@@ -204,7 +223,7 @@ router.patch('/registrations/:ticketId/checkin', requireAdmin, async (req, res) 
 });
 
 // DELETE /api/registrations/:ticketId
-router.delete('/registrations/:ticketId', requireAdmin, async (req, res) => {
+router.delete('/registrations/:ticketId', sekretariatOnly, async (req, res) => {
   if (!(await deleteRegistration(req.params.ticketId))) {
     return res.status(404).json({ success: false, message: 'Data registrasi tidak ditemukan' });
   }
@@ -226,11 +245,14 @@ router.post('/admin/login', async (req, res) => {
 
   // Hashes written by PHP start with $2y$, which is the same algorithm as $2b$
   if (user && (await bcrypt.compare(password, String(user.password).replace(/^\$2y\$/, '$2b$')))) {
+    if (!ROLES.includes(user.role)) {
+      return res.status(403).json({ success: false, message: 'Akun ini belum punya peran. Hubungi admin.' });
+    }
     return res.json({
       success: true,
       message: 'Login Admin Berhasil',
-      token: issueToken(user.name),
-      admin: { username: user.name, email: user.email },
+      token: issueToken(user),
+      admin: { username: user.name, email: user.email, role: user.role },
     });
   }
 
@@ -238,6 +260,77 @@ router.post('/admin/login', async (req, res) => {
     success: false,
     message: 'Username atau kata sandi admin salah. Silakan coba lagi.',
   });
+});
+
+// ==========================================
+// 4. ACCOUNTS (admin only)
+// ==========================================
+
+// Validated account fields from a form; the password is required only when creating
+function readUser(body, creating) {
+  const name = str(body?.name).toLowerCase();
+  const email = str(body?.email);
+  const role = str(body?.role);
+  const password = str(body?.password);
+
+  if (!/^[a-z0-9._-]{3,40}$/.test(name)) {
+    return { error: 'Username 3–40 karakter: huruf kecil, angka, titik, minus, atau garis bawah.' };
+  }
+  if (email.length > 150 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: 'Format email tidak valid.' };
+  if (!ROLES.includes(role)) return { error: 'Peran harus admin atau sekretariat.' };
+  // bcrypt only uses the first 72 bytes
+  if ((creating || password) && (password.length < 8 || password.length > 72)) {
+    return { error: 'Password harus 8–72 karakter.' };
+  }
+  return { fields: { name, email, role }, password };
+}
+
+const conflictMessage = 'Username atau email sudah dipakai akun lain.';
+
+router.get('/users', adminOnly, async (req, res) => {
+  res.json({ success: true, data: await listUsers() });
+});
+
+// ponytail: username/email uniqueness is check-then-write; fine for a few admins, add a unique index if that changes
+router.post('/users', adminOnly, async (req, res) => {
+  const input = readUser(req.body, true);
+  if (input.error) return res.status(422).json({ success: false, message: input.error });
+  if (await userConflict(input.fields)) return res.status(409).json({ success: false, message: conflictMessage });
+
+  const user = await createUser({ ...input.fields, passwordHash: await bcrypt.hash(input.password, 12) });
+  res.status(201).json({ success: true, message: `Akun ${user.name} dibuat.`, data: user });
+});
+
+router.patch('/users/:id', adminOnly, async (req, res) => {
+  const target = await findUserById(req.params.id);
+  if (!target) return res.status(404).json({ success: false, message: 'Akun tidak ditemukan.' });
+
+  const input = readUser(req.body, false);
+  if (input.error) return res.status(422).json({ success: false, message: input.error });
+  if (await userConflict(input.fields, target.id)) {
+    return res.status(409).json({ success: false, message: conflictMessage });
+  }
+  // Someone must always be able to log in and manage accounts
+  if (target.role === 'admin' && input.fields.role !== 'admin' && (await countAdmins()) <= 1) {
+    return res.status(409).json({ success: false, message: 'Harus ada minimal satu akun admin.' });
+  }
+
+  const fields = { ...input.fields };
+  if (input.password) fields.password = await bcrypt.hash(input.password, 12);
+  const user = await updateUser(target.id, fields);
+  res.json({ success: true, message: `Akun ${user.name} diperbarui.`, data: user });
+});
+
+router.delete('/users/:id', adminOnly, async (req, res) => {
+  const target = await findUserById(req.params.id);
+  if (!target) return res.status(404).json({ success: false, message: 'Akun tidak ditemukan.' });
+  // The caller is an admin, so deleting any other account always leaves at least one admin
+  if (target.id === String(req.user._id)) {
+    return res.status(409).json({ success: false, message: 'Tidak bisa menghapus akun yang sedang dipakai.' });
+  }
+
+  await deleteUser(target.id);
+  res.json({ success: true, message: `Akun ${target.name} dihapus.` });
 });
 
 // Catch-all for undefined /api routes

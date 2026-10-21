@@ -28,12 +28,14 @@ import {
   deleteRegistration,
   setCheckIn,
   isAdminAuthenticated,
+  currentRole,
   loginAdmin,
   logoutAdmin,
   exportRegistrationsToCSV,
 } from '../utils/storage';
 import { REGIONS, regionName } from '../utils/regions';
 import { intlPhone } from '../utils/phone';
+import AccountManager from './AccountManager';
 
 export default function AdminPortal({ onBackToHome }) {
   const [isAuthenticated, setIsAuthenticated] = useState(isAdminAuthenticated());
@@ -53,11 +55,14 @@ export default function AdminPortal({ onBackToHome }) {
 
   const [isLoadingData, setIsLoadingData] = useState(false);
 
+  // admin only manages accounts; sekretariat gets the registrations dashboard
+  const role = isAuthenticated ? currentRole() : null;
+
   useEffect(() => {
-    if (isAuthenticated) {
+    if (role === 'sekretariat') {
       loadData();
     }
-  }, [isAuthenticated]);
+  }, [role]);
 
   const loadData = async () => {
     setIsLoadingData(true);
@@ -318,6 +323,13 @@ export default function AdminPortal({ onBackToHome }) {
             </form>
           </div>
         </motion.section>
+      ) : role === 'admin' ? (
+        <AccountManager
+          key="admin-accounts-screen"
+          onBackToHome={onBackToHome}
+          onLogout={handleLogout}
+          onAuthError={handleActionError}
+        />
       ) : (
         <motion.section
           key="admin-dashboard-screen"
