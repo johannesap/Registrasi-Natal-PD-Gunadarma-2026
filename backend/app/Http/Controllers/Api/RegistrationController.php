@@ -29,7 +29,7 @@ class RegistrationController extends Controller
         return response()->json([
             'status' => 'ok',
             'framework' => 'Laravel 12 (PHP 8.2)',
-            'database' => 'PostgreSQL 18',
+            'database' => 'MongoDB Atlas',
             'event' => 'Natal Persekutuan Doa Universitas Gunadarma 2026',
             'tagline' => 'Merayakan Kasih, Menyalakan Harapan',
             'serverTime' => now()->toIso8601String(),
@@ -85,17 +85,17 @@ class RegistrationController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Registration::orderBy('id', 'desc');
+        $query = Registration::orderBy('_id', 'desc');
 
         if ($request->filled('search')) {
             $q = trim(strtolower($request->search));
             $query->where(function ($w) use ($q) {
-                $w->whereRaw('LOWER(full_name) LIKE ?', ["%{$q}%"])
-                  ->orWhere('npm', 'LIKE', "%{$q}%")
-                  ->orWhereRaw('LOWER(ticket_id) LIKE ?', ["%{$q}%"])
-                  ->orWhereRaw('LOWER(email) LIKE ?', ["%{$q}%"])
-                  ->orWhere('whatsapp', 'LIKE', "%{$q}%")
-                  ->orWhereRaw('LOWER(mentor_name) LIKE ?', ["%{$q}%"]);
+                $w->where('full_name', 'like', "%{$q}%")
+                  ->orWhere('npm', 'like', "%{$q}%")
+                  ->orWhere('ticket_id', 'like', "%{$q}%")
+                  ->orWhere('email', 'like', "%{$q}%")
+                  ->orWhere('whatsapp', 'like', "%{$q}%")
+                  ->orWhere('mentor_name', 'like', "%{$q}%");
             });
         }
 
@@ -219,7 +219,7 @@ class RegistrationController extends Controller
 
         $nowStr = Carbon::now()->format('d/m/Y, H.i');
 
-        // Persist to PostgreSQL database
+        // Persist to MongoDB
         $record = Registration::create([
             'ticket_id' => $ticketId,
             'full_name' => $fullName,
@@ -238,7 +238,7 @@ class RegistrationController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Registrasi berhasil! Tiket resmi telah diterbitkan di database PostgreSQL.',
+            'message' => 'Registrasi berhasil! Tiket resmi telah diterbitkan di database MongoDB.',
             'data' => $record->toFrontendArray(),
             'dispatch' => [
                 'whatsappUrl' => $waDispatchUrl,
@@ -289,7 +289,7 @@ class RegistrationController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Data registrasi berhasil dihapus dari PostgreSQL.',
+            'message' => 'Data registrasi berhasil dihapus dari MongoDB.',
             'remaining' => Registration::count(),
         ]);
     }
@@ -302,22 +302,24 @@ class RegistrationController extends Controller
         $user = trim(strtolower($request->input('username', '')));
         $pass = trim($request->input('password', ''));
 
-        // 1. Verifikasi langsung ke database PostgreSQL (Tabel users)
-        $dbUser = \App\Models\User::whereRaw('LOWER(email) = ?', [$user])
-            ->orWhereRaw('LOWER(name) = ?', [$user])
+        // 1. Verifikasi langsung ke database MongoDB (collection users)
+        // Cocok persis tanpa peduli huruf besar/kecil; preg_quote agar input tidak dibaca sebagai regex
+        $exact = new \MongoDB\BSON\Regex('^' . preg_quote($user) . '$', 'i');
+        $dbUser = \App\Models\User::where('email', 'regex', $exact)
+            ->orWhere('name', 'regex', $exact)
             ->first();
 
         if ($dbUser && \Illuminate\Support\Facades\Hash::check($pass, $dbUser->password)) {
             return response()->json([
                 'success' => true,
-                'message' => 'Login Admin Berhasil (Terverifikasi di Database PostgreSQL)',
+                'message' => 'Login Admin Berhasil (Terverifikasi di Database MongoDB)',
                 'token' => 'token_pg_' . time() . '_' . $dbUser->id,
                 'admin' => [
                     'id' => $dbUser->id,
                     'username' => $dbUser->name,
                     'email' => $dbUser->email,
                     'role' => 'Event Committee Administrator',
-                    'source' => 'PostgreSQL Database',
+                    'source' => 'MongoDB Database',
                 ],
             ]);
         }
@@ -350,7 +352,7 @@ class RegistrationController extends Controller
      */
     public function exportCsv()
     {
-        $registrations = Registration::orderBy('id', 'asc')->get();
+        $registrations = Registration::orderBy('_id', 'asc')->get();
 
         $headers = [
             'No',

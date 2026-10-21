@@ -264,7 +264,7 @@ export const loginAdmin = async (username, password) => {
   const validUser = 'admin';
   const validPass = 'natal2026';
 
-  // 1. Prioritize querying backend API for PostgreSQL database verification
+  // 1. Prioritize querying backend API for MongoDB database verification
   try {
     const res = await fetch(`${API_BASE}/admin/login`, {
       method: 'POST',
@@ -282,7 +282,7 @@ export const loginAdmin = async (username, password) => {
         if (data.token) {
           localStorage.setItem(AUTH_TOKEN_KEY, data.token);
         }
-        return { success: true, source: data.admin?.source || 'PostgreSQL' };
+        return { success: true, source: data.admin?.source || 'MongoDB' };
       }
     } else if (res.status === 401) {
       const data = await res.json().catch(() => null);
