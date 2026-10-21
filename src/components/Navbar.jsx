@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, RotateCcw } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import YouTubeAudio from './YouTubeAudio';
 
 export default function Navbar({
@@ -37,17 +37,6 @@ export default function Navbar({
 
         {/* Action Controls */}
         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-          {/* Replay Opening Button (shows when on hero) */}
-          <button
-            onClick={onReplayOpening}
-            type="button"
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-medium text-gray-300 hover:text-amber-200 glass-panel-subtle hover:border-amber-400/30 transition-all duration-300 cursor-pointer"
-            title="Putar Ulang Animasi Opening"
-          >
-            <RotateCcw className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span className="hidden md:inline">Ulang Opening</span>
-          </button>
-
           {/* Background music */}
           <YouTubeAudio />
         </div>
