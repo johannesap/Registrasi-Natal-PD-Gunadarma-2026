@@ -170,8 +170,8 @@
   animation: shimmerSweep 1.2s infinite;
 }
 
-/* Printing the ticket: only the success modal (rendered straight into <body>), as one page of dark
-   text on white. Without this the whole page prints and the fixed modal repeats on every page. */
+/* Printing the ticket: only the e-ticket card inside the success modal (rendered straight into
+   <body>), on one page. Without this the whole page prints and the fixed modal repeats on every page. */
 @media print {
   html,
   body {
@@ -182,18 +182,21 @@
   }
   .print-ticket {
     position: static !important;
+    display: block !important;
     padding: 0 !important;
-  }
-  .print-ticket,
-  .print-ticket * {
-    color: #000 !important;
-    -webkit-text-fill-color: #000 !important;
     background: none !important;
-    box-shadow: none !important;
-    text-shadow: none !important;
     backdrop-filter: none !important;
-    max-height: none !important;
-    overflow: visible !important;
+  }
+  /* Browsers drop backgrounds when printing; keep the card's dark and gold colours */
+  .print-ticket * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    box-shadow: none !important; /* the card shadow prints as a grey smudge */
+  }
+  /* Gradient-clipped text leaves a hairline in PDFs; solid gold looks the same on paper */
+  .print-ticket .text-gold-gradient {
+    background: none;
+    -webkit-text-fill-color: #f5d061;
   }
 }
 

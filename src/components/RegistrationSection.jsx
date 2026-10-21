@@ -34,6 +34,159 @@ const KOMSEL_OPTIONS = [
   'Tamu / Undangan Khusus',
 ];
 
+// The e-ticket card: live preview of the form, and the printed ticket once ticketId is known
+function TicketCard({ p, ticketId }) {
+  return (
+    <div className="relative rounded-2xl overflow-hidden border border-amber-400/30 bg-gradient-to-b from-[#09152b] via-[#051a14] to-[#1a060d] p-4 sm:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-xl">
+      {/* Gold foil ribbon border top */}
+      <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500" />
+
+      {/* Watermark Christmas Star */}
+      <div className="absolute -right-12 -bottom-12 w-48 h-48 opacity-10 pointer-events-none">
+        <svg viewBox="0 0 200 200" className="w-full h-full text-amber-300 fill-current">
+          <polygon points="100,5 125,75 195,100 125,125 100,195 75,125 5,100 75,75" />
+        </svg>
+      </div>
+
+      {/* Header Card */}
+      <div className="flex items-start justify-between border-b border-white/10 pb-4 mb-4">
+        <div>
+          <span className="text-[10px] tracking-[0.25em] uppercase text-amber-300 font-semibold block">
+            PERSEKUTUAN DOA UNIVERSITAS GUNADARMA
+          </span>
+          <h3 className="text-xl sm:text-2xl font-bold font-['Cinzel'] text-gold-gradient uppercase mt-0.5 tracking-wider">
+            NATAL 2026
+          </h3>
+          <p className="text-[11px] text-amber-100/70 italic font-['Cormorant_Garamond']">
+            &ldquo;Merayakan Kasih, Menyalakan Harapan&rdquo;
+          </p>
+        </div>
+        <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-amber-400/10 border border-amber-400/30 flex items-center justify-center shrink-0">
+          <Sparkles className="w-4 sm:w-5 h-4 sm:h-5 text-amber-300" />
+        </div>
+      </div>
+
+      {/* Card Body Information */}
+      <div className="space-y-3 text-xs">
+        <div>
+          <span className="text-[10px] text-gray-400 uppercase tracking-wider block">
+            Nama Lengkap
+          </span>
+          <span className="text-sm font-semibold text-white tracking-wide block truncate">
+            {p.fullName.trim() || 'Nama Peserta'}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <span className="text-[10px] text-gray-400 uppercase tracking-wider block">
+              NPM
+            </span>
+            <span className="font-mono text-amber-300 font-medium">
+              {p.npm.trim() || '— — — — — — — —'}
+            </span>
+          </div>
+          <div>
+            <span className="text-[10px] text-gray-400 uppercase tracking-wider block">
+              Region
+            </span>
+            <span className="text-gray-200 truncate block font-medium">
+              {getRegionName(p.region)}
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <span className="text-[10px] text-gray-400 uppercase tracking-wider block">
+              Email
+            </span>
+            <span className="text-gray-300 truncate block font-mono text-[11px]">
+              {p.email.trim() || 'email@domain.com'}
+            </span>
+          </div>
+          <div>
+            <span className="text-[10px] text-gray-400 uppercase tracking-wider block">
+              WhatsApp
+            </span>
+            <span className="text-gray-300 truncate block font-mono text-[11px]">
+              {p.whatsapp.trim() || '08xxxxxxxxxx'}
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <span className="text-[10px] text-gray-400 uppercase tracking-wider block">
+              Kakak Komsel
+            </span>
+            <span className="text-gray-200 truncate block">
+              {p.mentorName.trim() || '-'}
+            </span>
+          </div>
+          <div>
+            <span className="text-[10px] text-gray-400 uppercase tracking-wider block">
+              Jurusan
+            </span>
+            <span className="text-gray-200 truncate block">
+              {p.faculty.trim() || 'Gunadarma'}
+            </span>
+          </div>
+        </div>
+
+        {/* Event Schedule Info */}
+        <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1 mt-2">
+          <div className="flex items-center gap-1.5 text-gray-300 text-[11px]">
+            <Calendar className="w-3.5 h-3.5 text-amber-300" />
+            <span>{EVENT.date}</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-gray-300 text-[11px]">
+            <Clock className="w-3.5 h-3.5 text-amber-300" />
+            <span>{EVENT.time}</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-gray-300 text-[11px]">
+            <MapPin className="w-3.5 h-3.5 text-amber-300" />
+            <span>{EVENT.venue}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Barcode & Pass ID Footer */}
+      <div className="mt-4 pt-3.5 border-t border-dashed border-white/20 flex items-center justify-between">
+        {ticketId ? (
+          <div>
+            <span className="text-[9px] uppercase tracking-widest text-amber-300 block">
+              Kode Tiket Resmi
+            </span>
+            <span className="text-sm font-mono font-bold text-amber-300">{ticketId}</span>
+          </div>
+        ) : (
+          <div>
+            <span className="text-[9px] uppercase tracking-widest text-amber-300 block">
+              Status Pass
+            </span>
+            <span className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+              READY TO ISSUE
+            </span>
+          </div>
+        )}
+
+        {/* Stylized Barcode SVG */}
+        <div className="flex items-center gap-0.5 opacity-80 h-7">
+          {[2, 4, 1, 3, 2, 5, 2, 1, 4, 2, 3, 1, 5, 2, 3, 2].map((w, i) => (
+            <div
+              key={i}
+              className="bg-amber-200 h-full"
+              style={{ width: `${w}px` }}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function RegistrationSection({ onBackToHero }) {
   const [formData, setFormData] = useState({
     fullName: '',
@@ -454,145 +607,7 @@ export default function RegistrationSection({ onBackToHero }) {
               <span className="text-[11px] text-gray-400">Live Preview</span>
             </div>
 
-            {/* Christmas Digital Ticket Card */}
-            <div className="relative rounded-2xl overflow-hidden border border-amber-400/30 bg-gradient-to-b from-[#09152b] via-[#051a14] to-[#1a060d] p-4 sm:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-xl">
-              {/* Gold foil ribbon border top */}
-              <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500" />
-
-              {/* Watermark Christmas Star */}
-              <div className="absolute -right-12 -bottom-12 w-48 h-48 opacity-10 pointer-events-none">
-                <svg viewBox="0 0 200 200" className="w-full h-full text-amber-300 fill-current">
-                  <polygon points="100,5 125,75 195,100 125,125 100,195 75,125 5,100 75,75" />
-                </svg>
-              </div>
-
-              {/* Header Card */}
-              <div className="flex items-start justify-between border-b border-white/10 pb-4 mb-4">
-                <div>
-                  <span className="text-[10px] tracking-[0.25em] uppercase text-amber-300 font-semibold block">
-                    PERSEKUTUAN DOA UNIVERSITAS GUNADARMA
-                  </span>
-                  <h3 className="text-xl sm:text-2xl font-bold font-['Cinzel'] text-gold-gradient uppercase mt-0.5 tracking-wider">
-                    NATAL 2026
-                  </h3>
-                  <p className="text-[11px] text-amber-100/70 italic font-['Cormorant_Garamond']">
-                    &ldquo;Merayakan Kasih, Menyalakan Harapan&rdquo;
-                  </p>
-                </div>
-                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-amber-400/10 border border-amber-400/30 flex items-center justify-center shrink-0">
-                  <Sparkles className="w-4 sm:w-5 h-4 sm:h-5 text-amber-300" />
-                </div>
-              </div>
-
-              {/* Card Body Information */}
-              <div className="space-y-3 text-xs">
-                <div>
-                  <span className="text-[10px] text-gray-400 uppercase tracking-wider block">
-                    Nama Lengkap
-                  </span>
-                  <span className="text-sm font-semibold text-white tracking-wide block truncate">
-                    {formData.fullName.trim() || 'Nama Peserta'}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <span className="text-[10px] text-gray-400 uppercase tracking-wider block">
-                      NPM
-                    </span>
-                    <span className="font-mono text-amber-300 font-medium">
-                      {formData.npm.trim() || '— — — — — — — —'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-gray-400 uppercase tracking-wider block">
-                      Region
-                    </span>
-                    <span className="text-gray-200 truncate block font-medium">
-                      {getRegionName(formData.region)}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <span className="text-[10px] text-gray-400 uppercase tracking-wider block">
-                      Email
-                    </span>
-                    <span className="text-gray-300 truncate block font-mono text-[11px]">
-                      {formData.email.trim() || 'email@domain.com'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-gray-400 uppercase tracking-wider block">
-                      WhatsApp
-                    </span>
-                    <span className="text-gray-300 truncate block font-mono text-[11px]">
-                      {formData.whatsapp.trim() || '08xxxxxxxxxx'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <span className="text-[10px] text-gray-400 uppercase tracking-wider block">
-                      Kakak Komsel
-                    </span>
-                    <span className="text-gray-200 truncate block">
-                      {formData.mentorName.trim() || '-'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-gray-400 uppercase tracking-wider block">
-                      Jurusan
-                    </span>
-                    <span className="text-gray-200 truncate block">
-                      {formData.faculty.trim() || 'Gunadarma'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Event Schedule Info */}
-                <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1 mt-2">
-                  <div className="flex items-center gap-1.5 text-gray-300 text-[11px]">
-                    <Calendar className="w-3.5 h-3.5 text-amber-300" />
-                    <span>{EVENT.date}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-gray-300 text-[11px]">
-                    <Clock className="w-3.5 h-3.5 text-amber-300" />
-                    <span>{EVENT.time}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-gray-300 text-[11px]">
-                    <MapPin className="w-3.5 h-3.5 text-amber-300" />
-                    <span>{EVENT.venue}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Barcode & Pass ID Footer */}
-              <div className="mt-4 pt-3.5 border-t border-dashed border-white/20 flex items-center justify-between">
-                <div>
-                  <span className="text-[9px] uppercase tracking-widest text-amber-300 block">
-                    Status Pass
-                  </span>
-                  <span className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                    READY TO ISSUE
-                  </span>
-                </div>
-
-                {/* Stylized Barcode SVG */}
-                <div className="flex items-center gap-0.5 opacity-80 h-7">
-                  {[2, 4, 1, 3, 2, 5, 2, 1, 4, 2, 3, 1, 5, 2, 3, 2].map((w, i) => (
-                    <div
-                      key={i}
-                      className="bg-amber-200 h-full"
-                      style={{ width: `${w}px` }}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
+            <TicketCard p={formData} />
 
             <p className="text-[11px] text-gray-400 text-center mt-3">
               Pratinjau tiket. Kode tiket resmi muncul setelah Anda menekan Konfirmasi.
@@ -606,17 +621,22 @@ export default function RegistrationSection({ onBackToHero }) {
       <AnimatePresence>
         {registered && (
           <div className="print-ticket fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
+            {/* Paper version: the same card as the live preview, now with the ticket code */}
+            <div className="hidden print:block w-[460px] mx-auto">
+              <TicketCard p={registered} ticketId={registered.ticketId} />
+            </div>
+
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="glass-panel max-w-lg w-full max-h-[92vh] overflow-y-auto rounded-2xl p-4 sm:p-7 md:p-8 text-center relative border border-amber-400/40 shadow-[0_0_60px_rgba(245,208,97,0.3)] my-auto"
+              className="print:hidden glass-panel max-w-lg w-full max-h-[92vh] overflow-y-auto rounded-2xl p-4 sm:p-7 md:p-8 text-center relative border border-amber-400/40 shadow-[0_0_60px_rgba(245,208,97,0.3)] my-auto"
             >
               {/* Close Button */}
               <button
                 onClick={() => setRegistered(null)}
-                className="print:hidden absolute top-4 right-4 text-gray-400 hover:text-white text-sm cursor-pointer p-1"
+                className="absolute top-4 right-4 text-gray-400 hover:text-white text-sm cursor-pointer p-1"
               >
                 ✕
               </button>
@@ -641,7 +661,7 @@ export default function RegistrationSection({ onBackToHero }) {
               </p>
 
               {/* Tickets are not sent automatically: tell people how to keep theirs */}
-              <div className="print:hidden p-4 rounded-xl bg-gradient-to-r from-emerald-950/40 via-neutral-900/80 to-emerald-950/40 border border-emerald-400/30 text-left text-xs text-gray-300 space-y-1.5 mb-5">
+              <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-950/40 via-neutral-900/80 to-emerald-950/40 border border-emerald-400/30 text-left text-xs text-gray-300 space-y-1.5 mb-5">
                 <div className="flex items-center gap-2 font-semibold text-emerald-300 uppercase tracking-wider">
                   <Send className="w-3.5 h-3.5" />
                   <span>Simpan Tiket Anda</span>
@@ -676,7 +696,7 @@ export default function RegistrationSection({ onBackToHero }) {
               </div>
 
               {/* Action Buttons: Open WhatsApp, Print, Done */}
-              <div className="print:hidden space-y-2.5">
+              <div className="space-y-2.5">
                 {/* 1-Click Open in WhatsApp */}
                 <a
                   href={registered.dispatch.whatsappUrl}
