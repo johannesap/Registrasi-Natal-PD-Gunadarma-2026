@@ -21,6 +21,7 @@ import {
   MessageSquare,
   Check,
   ExternalLink,
+  AlertCircle,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { addRegistration } from '../utils/storage';
@@ -58,6 +59,7 @@ export default function RegistrationSection({ onBackToHero }) {
   const [submitted, setSubmitted] = useState(false);
   const [ticketId, setTicketId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
   const [dispatchInfo, setDispatchInfo] = useState({
     emailSent: false,
     whatsappSent: false,
@@ -103,6 +105,7 @@ export default function RegistrationSection({ onBackToHero }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setSubmitError('');
 
     try {
       // Generate initial ticket code
@@ -112,7 +115,7 @@ export default function RegistrationSection({ onBackToHero }) {
         '-' +
         (formData.npm.slice(-4) || '2026');
 
-      // Submit registration to backend API (with resilient offline fallback)
+      // Submit registration to backend API (throws if the server did not save it)
       const registered = await addRegistration({
         ticketId: randomCode,
         fullName: formData.fullName.trim(),
@@ -188,6 +191,7 @@ export default function RegistrationSection({ onBackToHero }) {
       }
     } catch (err) {
       console.error('Registration failed:', err);
+      setSubmitError(err.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -460,6 +464,16 @@ export default function RegistrationSection({ onBackToHero }) {
                 />
               </div>
             </div>
+
+            {submitError && (
+              <div
+                role="alert"
+                className="p-3 rounded-xl bg-rose-950/40 border border-rose-500/40 text-rose-200 text-xs flex items-center gap-2"
+              >
+                <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                <span>Pendaftaran belum tersimpan: {submitError}</span>
+              </div>
+            )}
 
             {/* Submit Button */}
             <div className="pt-2">

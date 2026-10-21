@@ -26,7 +26,6 @@ import {
   Mail,
   FileSpreadsheet,
   AlertCircle,
-  HelpCircle,
 } from 'lucide-react';
 import {
   getRegistrations,
@@ -81,7 +80,8 @@ export default function AdminPortal({ onBackToHome }) {
       const data = await fetchRegistrations();
       setRegistrations(data);
       setServerOnline(true);
-    } catch {
+    } catch (err) {
+      if (err.status === 401) return handleSessionExpired(err);
       const fallback = getRegistrations();
       setRegistrations(fallback);
       setServerOnline(false);
@@ -117,21 +117,33 @@ export default function AdminPortal({ onBackToHome }) {
     setPassword('');
   };
 
-  const handleFillDemo = () => {
-    setUsername('admin');
-    setPassword('natal2026');
-    setLoginError('');
+  const handleSessionExpired = (err) => {
+    handleLogout();
+    setLoginError(err.message);
+  };
+
+  // Changes are only shown once the server has saved them
+  const handleActionError = (err) => {
+    if (err.status === 401) return handleSessionExpired(err);
+    window.alert(err.message);
   };
 
   const handleToggleCheckIn = async (ticketId) => {
-    const updated = await toggleCheckIn(ticketId);
-    setRegistrations(updated);
+    try {
+      setRegistrations(await toggleCheckIn(ticketId));
+    } catch (err) {
+      handleActionError(err);
+    }
   };
 
   const handleDelete = async (ticketId) => {
-    const updated = await deleteRegistration(ticketId);
-    setRegistrations(updated);
-    setDeleteConfirmId(null);
+    try {
+      setRegistrations(await deleteRegistration(ticketId));
+    } catch (err) {
+      return handleActionError(err);
+    } finally {
+      setDeleteConfirmId(null);
+    }
     if (selectedParticipant?.ticketId === ticketId) {
       setSelectedParticipant(null);
     }
@@ -321,33 +333,6 @@ export default function AdminPortal({ onBackToHome }) {
                 )}
               </button>
             </form>
-
-            {/* Quick Demo Credentials Info */}
-            <div className="mt-6 p-3.5 rounded-xl bg-amber-950/20 border border-amber-400/20 text-xs text-gray-300 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-amber-300 flex items-center gap-1.5">
-                  <HelpCircle className="w-3.5 h-3.5" />
-                  Akun Demo Panitia:
-                </span>
-                <button
-                  type="button"
-                  onClick={handleFillDemo}
-                  className="text-[11px] text-amber-300 underline hover:text-white cursor-pointer"
-                >
-                  Isi Otomatis
-                </button>
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-[11px] font-mono bg-black/40 p-2 rounded-lg border border-white/5">
-                <div>
-                  <span className="text-gray-400 block text-[10px]">User:</span>
-                  <span className="text-amber-200">admin</span>
-                </div>
-                <div>
-                  <span className="text-gray-400 block text-[10px]">Pass:</span>
-                  <span className="text-amber-200">natal2026</span>
-                </div>
-              </div>
-            </div>
           </div>
         </motion.section>
       ) : (

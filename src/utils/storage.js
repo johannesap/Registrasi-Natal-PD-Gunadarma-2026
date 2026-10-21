@@ -4,6 +4,39 @@ const AUTH_TOKEN_KEY = 'natal_pd_admin_token_2026';
 
 const API_BASE = '/api';
 
+// Calls the API with the admin token and throws the server's message on any failure
+const apiFetch = async (path, { method = 'GET', body } = {}) => {
+  let token = null;
+  try {
+    token = localStorage.getItem(AUTH_TOKEN_KEY);
+  } catch {
+    // storage blocked: continue without token
+  }
+
+  let res;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      method,
+      headers: {
+        Accept: 'application/json',
+        ...(body ? { 'Content-Type': 'application/json' } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch {
+    throw new Error('Server tidak dapat dihubungi. Periksa koneksi internet lalu coba lagi.');
+  }
+
+  const json = await res.json().catch(() => null);
+  if (!res.ok || !json?.success) {
+    const err = new Error(json?.message || 'Terjadi kesalahan pada server. Silakan coba lagi.');
+    err.status = res.status;
+    throw err;
+  }
+  return json;
+};
+
 // Initial seed data for fallback if offline
 const INITIAL_REGISTRATIONS = [
   {
@@ -121,126 +154,47 @@ export const getRegistrations = () => {
   return getLocalRegistrations();
 };
 
-// Async fetcher from backend API with local cache synchronization
+// Async fetcher from backend API with local cache synchronization (throws on failure)
 export const fetchRegistrations = async (filterParams = {}) => {
-  try {
-    const query = new URLSearchParams(filterParams).toString();
-    const url = query ? `${API_BASE}/registrations?${query}` : `${API_BASE}/registrations`;
-    const res = await fetch(url, { headers: { Accept: 'application/json' } });
-    if (res.ok) {
-      const json = await res.json();
-      if (json && Array.isArray(json.data)) {
-        saveLocalRegistrations(json.data);
-        return json.data;
-      }
-    }
-  } catch (error) {
-    console.warn('[API] Could not connect to backend server, falling back to local storage:', error);
-  }
-  return getLocalRegistrations();
+  const query = new URLSearchParams(filterParams).toString();
+  const json = await apiFetch(query ? `/registrations?${query}` : '/registrations');
+  saveLocalRegistrations(json.data);
+  return json.data;
 };
 
-// Register participant (Calls backend API POST /api/register with local fallback)
+// Register participant (Calls backend API POST /api/register; throws if not saved on the server)
 export const addRegistration = async (registration) => {
-  try {
-    const res = await fetch(`${API_BASE}/register`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify(registration),
-    });
+  const result = await apiFetch('/register', { method: 'POST', body: registration });
 
-    if (res.ok) {
-      const result = await res.json();
-      if (result.success && result.data) {
-        // Update local cache
-        const current = getLocalRegistrations();
-        const updated = [result.data, ...current.filter((r) => r.ticketId !== result.data.ticketId)];
-        saveLocalRegistrations(updated);
-        return {
-          ...result.data,
-          dispatch: result.dispatch,
-          serverSynced: true,
-        };
-      }
-    }
-  } catch (err) {
-    console.warn('[API] Server offline during registration. Using local save.', err);
-  }
-
-  // Fallback to local storage
   const current = getLocalRegistrations();
-  const timestamp = new Date().toLocaleString('id-ID', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-
-  const newEntry = {
-    ...registration,
-    registeredAt: timestamp,
-    isCheckedIn: false,
-    serverSynced: false,
-  };
-
-  const updated = [newEntry, ...current];
+  const updated = [result.data, ...current.filter((r) => r.ticketId !== result.data.ticketId)];
   saveLocalRegistrations(updated);
-  return newEntry;
+  return {
+    ...result.data,
+    dispatch: result.dispatch,
+    serverSynced: true,
+  };
 };
 
 // Toggle Check-in status (Calls backend API PATCH /api/registrations/:ticketId/checkin)
 export const toggleCheckIn = async (ticketId) => {
-  try {
-    const res = await fetch(`${API_BASE}/registrations/${encodeURIComponent(ticketId)}/checkin`, {
-      method: 'PATCH',
-      headers: { Accept: 'application/json' },
-    });
-
-    if (res.ok) {
-      const json = await res.json();
-      if (json.success && json.data) {
-        const current = getLocalRegistrations();
-        const updated = current.map((item) =>
-          item.ticketId === ticketId ? { ...item, isCheckedIn: json.data.isCheckedIn } : item
-        );
-        saveLocalRegistrations(updated);
-        return updated;
-      }
-    }
-  } catch (err) {
-    console.warn('[API] Server offline during checkin toggle, updating locally:', err);
-  }
-
-  // Local fallback
-  const current = getLocalRegistrations();
-  const updated = current.map((item) => {
-    if (item.ticketId === ticketId) {
-      return { ...item, isCheckedIn: !item.isCheckedIn };
-    }
-    return item;
+  const json = await apiFetch(`/registrations/${encodeURIComponent(ticketId)}/checkin`, {
+    method: 'PATCH',
   });
+
+  const current = getLocalRegistrations();
+  const updated = current.map((item) =>
+    item.ticketId === ticketId
+      ? { ...item, isCheckedIn: json.data.isCheckedIn, checkedInAt: json.data.checkedInAt }
+      : item
+  );
   saveLocalRegistrations(updated);
   return updated;
 };
 
 // Delete participant registration (Calls backend API DELETE /api/registrations/:ticketId)
 export const deleteRegistration = async (ticketId) => {
-  try {
-    const res = await fetch(`${API_BASE}/registrations/${encodeURIComponent(ticketId)}`, {
-      method: 'DELETE',
-      headers: { Accept: 'application/json' },
-    });
-
-    if (res.ok) {
-      console.log(`[API] Deleted ticket ${ticketId} on server.`);
-    }
-  } catch (err) {
-    console.warn('[API] Server offline during delete, updating locally:', err);
-  }
+  await apiFetch(`/registrations/${encodeURIComponent(ticketId)}`, { method: 'DELETE' });
 
   const current = getLocalRegistrations();
   const updated = current.filter((item) => item.ticketId !== ticketId);
@@ -261,50 +215,19 @@ export const loginAdmin = async (username, password) => {
   const cleanUser = (username || '').trim().toLowerCase();
   const cleanPass = (password || '').trim();
 
-  const validUser = 'admin';
-  const validPass = 'natal2026';
-
-  // 1. Prioritize querying backend API for MongoDB database verification
   try {
-    const res = await fetch(`${API_BASE}/admin/login`, {
+    const data = await apiFetch('/admin/login', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify({ username: cleanUser, password: cleanPass }),
+      body: { username: cleanUser, password: cleanPass },
     });
-
-    if (res.ok) {
-      const data = await res.json();
-      if (data.success) {
-        localStorage.setItem(AUTH_KEY, 'true');
-        if (data.token) {
-          localStorage.setItem(AUTH_TOKEN_KEY, data.token);
-        }
-        return { success: true, source: data.admin?.source || 'MongoDB' };
-      }
-    } else if (res.status === 401) {
-      const data = await res.json().catch(() => null);
-      return {
-        success: false,
-        message: data?.message || 'Username atau kata sandi admin salah.',
-      };
-    }
-  } catch (error) {
-    console.warn('[API] Server offline, falling back to local credentials validation:', error);
-  }
-
-  // 2. Fallback when server is unreachable (e.g. standalone Vercel preview)
-  if (cleanUser === validUser && cleanPass === validPass) {
     localStorage.setItem(AUTH_KEY, 'true');
-    return { success: true, source: 'Offline Fallback' };
+    if (data.token) {
+      localStorage.setItem(AUTH_TOKEN_KEY, data.token);
+    }
+    return { success: true, source: data.admin?.source || 'MongoDB' };
+  } catch (err) {
+    return { success: false, message: err.message };
   }
-
-  return {
-    success: false,
-    message: 'Username atau kata sandi admin salah. Silakan coba lagi.',
-  };
 };
 
 export const logoutAdmin = () => {

@@ -2,15 +2,11 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import apiRouter from './routes/api.js';
-import { initDB } from './db.js';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-
-// Initialize file database
-initDB();
 
 // Middleware
 app.use(
@@ -55,7 +51,8 @@ app.get('/', (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
+// Vercel imports the app as a serverless function; listen only when run locally
+if (!process.env.VERCEL) app.listen(PORT, () => {
   console.log(`
 ============================================================
   🌟 NATAL PERSEKUTUAN DOA UNIVERSITAS GUNADARMA 2026 🌟
