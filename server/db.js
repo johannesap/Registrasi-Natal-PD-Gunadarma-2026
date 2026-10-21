@@ -53,7 +53,6 @@ const formatRegistered = (date) => {
 // Shape the frontend expects (camelCase)
 export function toFrontend(doc) {
   return {
-    id: String(doc._id),
     ticketId: doc.ticket_id,
     fullName: doc.full_name,
     npm: doc.npm,
@@ -123,10 +122,10 @@ export async function setCheckIn(ticketId, checkedIn) {
   return doc ? toFrontend(doc) : null;
 }
 
+// true when a registration was deleted
 export async function deleteRegistration(ticketId) {
-  const col = await registrations();
-  const { deletedCount } = await col.deleteOne({ ticket_id: ticketId.trim().toUpperCase() });
-  return { success: deletedCount > 0, remaining: await col.countDocuments() };
+  const { deletedCount } = await (await registrations()).deleteOne({ ticket_id: ticketId.trim().toUpperCase() });
+  return deletedCount > 0;
 }
 
 export async function countRegistrations() {
@@ -142,7 +141,8 @@ export async function findAdminUser(login) {
 export async function upsertAdminUser({ name, email, passwordHash }) {
   const now = new Date();
   await (await getDb()).collection('users').updateOne(
-    { email: exactIgnoreCase(email) },
+    // match by name too, so a new email updates the same admin instead of creating a second one
+    { $or: [{ email: exactIgnoreCase(email) }, { name: exactIgnoreCase(name) }] },
     { $set: { name, email, password: passwordHash, updated_at: now }, $setOnInsert: { created_at: now } },
     { upsert: true }
   );

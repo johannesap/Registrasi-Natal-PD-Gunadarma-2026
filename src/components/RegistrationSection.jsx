@@ -45,12 +45,10 @@ export default function RegistrationSection({ onBackToHero }) {
     session: 'Sesi Utama (16.30 WIB - Selesai)',
   });
 
-  const [submitted, setSubmitted] = useState(false);
-  const [ticketId, setTicketId] = useState('');
+  // The saved registration as the server returned it (null until submitted)
+  const [registered, setRegistered] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
-  const [whatsappUrl, setWhatsappUrl] = useState('');
-  const [alreadyRegistered, setAlreadyRegistered] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -90,7 +88,7 @@ export default function RegistrationSection({ onBackToHero }) {
 
     try {
       // The server makes the ticket code and WhatsApp link; this throws if it did not save
-      const registered = await addRegistration({
+      const result = await addRegistration({
         fullName: formData.fullName.trim(),
         npm: formData.npm.trim(),
         email: formData.email.trim(),
@@ -102,10 +100,7 @@ export default function RegistrationSection({ onBackToHero }) {
         session: formData.session,
       });
 
-      setTicketId(registered.ticketId);
-      setWhatsappUrl(registered.dispatch.whatsappUrl);
-      setAlreadyRegistered(Boolean(registered.alreadyRegistered));
-      setSubmitted(true);
+      setRegistered(result);
 
       // Trigger festive golden confetti celebration
       try {
@@ -597,7 +592,7 @@ export default function RegistrationSection({ onBackToHero }) {
 
       {/* SUCCESS CONFIRMATION MODAL WITH AUTOMATIC WHATSAPP & EMAIL DISPATCH */}
       <AnimatePresence>
-        {submitted && (
+        {registered && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -608,7 +603,7 @@ export default function RegistrationSection({ onBackToHero }) {
             >
               {/* Close Button */}
               <button
-                onClick={() => setSubmitted(false)}
+                onClick={() => setRegistered(null)}
                 className="absolute top-4 right-4 text-gray-400 hover:text-white text-sm cursor-pointer p-1"
               >
                 ✕
@@ -627,8 +622,8 @@ export default function RegistrationSection({ onBackToHero }) {
               </h3>
 
               <p className="text-xs sm:text-sm text-gray-300 font-light mb-5">
-                Terima kasih, <strong className="text-white">{formData.fullName}</strong>.{' '}
-                {alreadyRegistered
+                Terima kasih, <strong className="text-white">{registered.fullName}</strong>.{' '}
+                {registered.alreadyRegistered
                   ? 'NPM dan email ini sudah terdaftar sebelumnya, jadi ini tiket Anda yang lama.'
                   : 'Pendaftaran Anda sudah tersimpan.'}
               </p>
@@ -649,19 +644,19 @@ export default function RegistrationSection({ onBackToHero }) {
               <div className="p-3.5 rounded-xl bg-black/60 border border-amber-400/20 text-left space-y-1.5 mb-5 text-xs">
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400">Kode Tiket Resmi:</span>
-                  <span className="font-mono font-bold text-amber-300 text-sm">{ticketId}</span>
+                  <span className="font-mono font-bold text-amber-300 text-sm">{registered.ticketId}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400">NPM Mahasiswa:</span>
-                  <span className="font-mono text-white">{formData.npm}</span>
+                  <span className="font-mono text-white">{registered.npm}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400">Region Kampus:</span>
-                  <span className="text-white font-medium">{getRegionName(formData.region)}</span>
+                  <span className="text-white font-medium">{getRegionName(registered.region)}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400">Kakak Komsel:</span>
-                  <span className="text-white">{formData.mentorName || '-'}</span>
+                  <span className="text-white">{registered.mentorName}</span>
                 </div>
               </div>
 
@@ -669,7 +664,7 @@ export default function RegistrationSection({ onBackToHero }) {
               <div className="space-y-2.5">
                 {/* 1-Click Open in WhatsApp */}
                 <a
-                  href={whatsappUrl}
+                  href={registered.dispatch.whatsappUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full py-3 rounded-xl font-semibold text-emerald-950 bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-400 hover:brightness-105 text-xs tracking-wider uppercase flex items-center justify-center gap-2 cursor-pointer transition-all shadow-[0_0_20px_rgba(52,211,153,0.3)]"
@@ -689,7 +684,7 @@ export default function RegistrationSection({ onBackToHero }) {
                     <span>Cetak / Simpan Tiket</span>
                   </button>
                   <button
-                    onClick={() => setSubmitted(false)}
+                    onClick={() => setRegistered(null)}
                     type="button"
                     className="px-5 py-2.5 rounded-xl font-medium text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 text-xs tracking-wider uppercase transition-colors cursor-pointer"
                   >

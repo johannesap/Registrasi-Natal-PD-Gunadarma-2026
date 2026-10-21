@@ -8,7 +8,7 @@
     "server": "node server/index.js",
     "build": "vite build",
     "lint": "oxlint",
-    "test": "node --test server/auth.test.js",
+    "test": "node --test server/auth.test.js server/db.test.js",
     "set-admin": "node server/set-admin.js",
     "preview": "vite preview",
     "laravel": "cd backend && php artisan serve --port=8000"

@@ -74,14 +74,15 @@ router.get('/registrations', requireAdmin, async (req, res) => {
   res.json({ success: true, total: list.length, data: list });
 });
 
+// 0812… / 812… / 62812… → 62812…
+function intlPhone(digits) {
+  if (digits.startsWith('0')) return '62' + digits.slice(1);
+  return digits.startsWith('62') ? digits : '62' + digits;
+}
+
 // Click-to-chat link that opens WhatsApp with the ticket message for the participant's own number
 function whatsappLink(r) {
-  let phone = r.whatsapp;
-  if (phone.startsWith('0')) {
-    phone = '62' + phone.slice(1);
-  } else if (!phone.startsWith('62')) {
-    phone = '62' + phone;
-  }
+  const phone = intlPhone(r.whatsapp);
 
   const text =
     `✨ *TIKET RESMI — NATAL PERSEKUTUAN DOA UNIVERSITAS GUNADARMA 2026* ✨\n` +
@@ -139,6 +140,13 @@ router.post('/register', async (req, res) => {
   // submit button disabled while sending; add a unique {npm, email} index if duplicates still show up.
   const existing = await findExistingRegistration(npm, email);
   if (existing) {
+    // NPM and email are not secret: only hand back the ticket (and phone number) to someone who also knows the phone
+    if (intlPhone(existing.whatsapp) !== intlPhone(whatsapp)) {
+      return res.status(409).json({
+        success: false,
+        message: 'NPM dan email ini sudah terdaftar dengan nomor WhatsApp lain. Hubungi panitia.',
+      });
+    }
     return res.json({
       success: true,
       alreadyRegistered: true,
@@ -201,12 +209,11 @@ router.patch('/registrations/:ticketId/checkin', requireAdmin, async (req, res) 
 
 // DELETE /api/registrations/:ticketId
 router.delete('/registrations/:ticketId', requireAdmin, async (req, res) => {
-  const { success, remaining } = await deleteRegistration(req.params.ticketId);
-  if (!success) {
+  if (!(await deleteRegistration(req.params.ticketId))) {
     return res.status(404).json({ success: false, message: 'Data registrasi tidak ditemukan' });
   }
 
-  res.json({ success: true, message: 'Data registrasi berhasil dihapus.', remaining });
+  res.json({ success: true, message: 'Data registrasi berhasil dihapus.' });
 });
 
 // ==========================================
