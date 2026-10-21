@@ -2,7 +2,6 @@
 // Handles HTML5 Audio playback, autoplay detection, synchronization, and fallbacks
 
 const AUDIO_SRC_MP3 = '/audio/jingle-bells.mp3';
-const AUDIO_SRC_OGG = '/audio/jingle-bells.ogg';
 
 class ChristmasAudioManager {
   constructor() {
@@ -45,15 +44,6 @@ class ChristmasAudioManager {
       if (this.audio) {
         this.audio.currentTime = 0;
         this.audio.play().catch(() => {});
-      }
-    });
-
-    this.audio.addEventListener('error', () => {
-      if (this.audio && this.audio.src.endsWith('.mp3')) {
-        this.audio.src = AUDIO_SRC_OGG;
-        if (this.isPlaying) {
-          this.audio.play().catch(() => {});
-        }
       }
     });
 
@@ -137,19 +127,8 @@ class ChristmasAudioManager {
       this.hasUnlocked = true;
       this.notify();
       return true;
-    } catch {
-      try {
-        if (this.audio.src.endsWith('.mp3')) {
-          this.audio.src = AUDIO_SRC_OGG;
-          await this.audio.play();
-          this.isPlaying = true;
-          this.hasUnlocked = true;
-          this.notify();
-          return true;
-        }
-      } catch (e) {
-        console.warn('Audio playback error:', e);
-      }
+    } catch (e) {
+      console.warn('Audio playback error:', e);
       return false;
     }
   }
