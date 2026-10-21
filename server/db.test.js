@@ -8,8 +8,6 @@ const LIVE_DB = 'natal_pd_2026';
 const skip = !process.env.MONGODB_URI
   ? 'MONGODB_URI not set'
   : (process.env.MONGODB_DATABASE || LIVE_DB) === LIVE_DB && 'refusing to write test data to the live database';
-// Test participants have example.com addresses: never email them
-delete process.env.SMTP_USER;
 
 const { default: app } = await import('./app.js');
 const { setCheckIn, deleteRegistration, closeDb, createUser, deleteUser, countAdmins } = await import('./db.js');

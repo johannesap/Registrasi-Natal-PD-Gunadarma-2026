@@ -4,7 +4,6 @@ import bcrypt from 'bcryptjs';
 import { regionName } from '../../src/utils/regions.js';
 import { EVENT } from '../../src/utils/event.js';
 import { intlPhone } from '../../src/utils/phone.js';
-import { sendTicketEmail } from '../mailer.js';
 import {
   listRegistrations,
   findExistingRegistration,
@@ -176,8 +175,7 @@ router.post('/register', async (req, res) => {
       alreadyRegistered: true,
       message: 'Anda sudah terdaftar sebelumnya. Ini tiket Anda.',
       data: existing,
-      // Sent again, so a participant who lost the first email can get it back
-      dispatch: { whatsappUrl: whatsappLink(existing), emailSent: await sendTicketEmail(existing) },
+      dispatch: { whatsappUrl: whatsappLink(existing) },
     });
   }
 
@@ -209,7 +207,7 @@ router.post('/register', async (req, res) => {
     success: true,
     message: 'Registrasi berhasil! Tiket resmi telah diterbitkan.',
     data: record,
-    dispatch: { whatsappUrl: whatsappLink(record), emailSent: await sendTicketEmail(record) },
+    dispatch: { whatsappUrl: whatsappLink(record) },
   });
 });
 

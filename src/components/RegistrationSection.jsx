@@ -586,7 +586,7 @@ export default function RegistrationSection({ onBackToHero }) {
 
             <div className="flex items-center justify-center gap-2 text-xs text-gray-400 pt-1">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>Tiket langsung muncul dan dikirim ke email Anda</span>
+              <span>Kode tiket langsung muncul setelah Anda mendaftar</span>
             </div>
           </form>
         </motion.div>
@@ -660,30 +660,17 @@ export default function RegistrationSection({ onBackToHero }) {
                   : 'Pendaftaran Anda sudah tersimpan.'}
               </p>
 
-              {/* The server emails the ticket; if that failed, tell people how else to keep it */}
-              {registered.dispatch.emailSent ? (
-                <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-950/40 via-neutral-900/80 to-emerald-950/40 border border-emerald-400/30 text-left text-xs text-gray-300 space-y-1.5 mb-5">
-                  <div className="flex items-center gap-2 font-semibold text-emerald-300 uppercase tracking-wider">
-                    <Send className="w-3.5 h-3.5" />
-                    <span>Tiket Terkirim ke Email</span>
-                  </div>
-                  <p>
-                    Tiket sudah dikirim ke <strong className="text-white break-words">{registered.email}</strong>. Tidak ada di
-                    Kotak Masuk? Cek folder Spam atau Promosi. Tunjukkan kode tiket di pintu masuk.
-                  </p>
+              {/* Tickets are not sent automatically: tell people how to keep theirs */}
+              <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-950/40 via-neutral-900/80 to-emerald-950/40 border border-emerald-400/30 text-left text-xs text-gray-300 space-y-1.5 mb-5">
+                <div className="flex items-center gap-2 font-semibold text-emerald-300 uppercase tracking-wider">
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Simpan Tiket Anda</span>
                 </div>
-              ) : (
-                <div className="p-4 rounded-xl bg-amber-950/30 border border-amber-400/30 text-left text-xs text-gray-300 space-y-1.5 mb-5">
-                  <div className="flex items-center gap-2 font-semibold text-amber-300 uppercase tracking-wider">
-                    <AlertCircle className="w-3.5 h-3.5" />
-                    <span>Email Tiket Belum Terkirim</span>
-                  </div>
-                  <p>
-                    Tiket belum bisa dikirim ke <strong className="text-white break-words">{registered.email}</strong>. Simpan
-                    tiket lewat tombol WhatsApp di bawah, atau cetak/screenshot halaman ini. Tunjukkan kode tiket di pintu masuk.
-                  </p>
-                </div>
-              )}
+                <p>
+                  Tekan tombol hijau di bawah untuk membuka WhatsApp, lalu kirim pesan tiket itu ke nomor Anda sendiri.
+                  Anda juga bisa mencetak atau screenshot halaman ini. Tunjukkan kode tiket di pintu masuk.
+                </p>
+              </div>
 
               {/* Pass Summary Details */}
               <div className="p-3.5 rounded-xl bg-black/60 border border-amber-400/20 text-left space-y-1.5 mb-5 text-xs">
