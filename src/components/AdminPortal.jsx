@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Lock,
@@ -32,6 +33,7 @@ import {
   exportRegistrationsToCSV,
 } from '../utils/storage';
 import { REGIONS, regionName } from '../utils/regions';
+import { intlPhone } from '../utils/phone';
 
 export default function AdminPortal({ onBackToHome }) {
   const [isAuthenticated, setIsAuthenticated] = useState(isAdminAuthenticated());
@@ -255,7 +257,7 @@ export default function AdminPortal({ onBackToHome }) {
             {/* Login Form */}
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5">
+                <label htmlFor="admin-username" className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5">
                   Username Admin
                 </label>
                 <div className="relative">
@@ -263,7 +265,9 @@ export default function AdminPortal({ onBackToHome }) {
                     <User className="w-4 h-4 text-amber-300/70" />
                   </div>
                   <input
+                    id="admin-username"
                     type="text"
+                    autoComplete="username"
                     required
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
@@ -274,7 +278,7 @@ export default function AdminPortal({ onBackToHome }) {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5">
+                <label htmlFor="admin-password" className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5">
                   Password
                 </label>
                 <div className="relative">
@@ -282,7 +286,9 @@ export default function AdminPortal({ onBackToHome }) {
                     <KeyRound className="w-4 h-4 text-amber-300/70" />
                   </div>
                   <input
+                    id="admin-password"
                     type="password"
+                    autoComplete="current-password"
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -330,9 +336,6 @@ export default function AdminPortal({ onBackToHome }) {
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
               <span className="text-[11px] font-semibold tracking-widest uppercase text-amber-300">
                 PANEL RESMI KESEKRETARIATAN NATAL 2026
-              </span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono">
-                Backend API Online
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold font-['Cinzel'] text-gold-gradient tracking-wide uppercase">
@@ -462,6 +465,7 @@ export default function AdminPortal({ onBackToHome }) {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                aria-label="Cari peserta"
                 placeholder="Cari Nama, NPM, Email, WA..."
                 className="w-full pl-10 pr-4 py-2.5 bg-neutral-900/80 border border-white/10 rounded-xl text-xs sm:text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
               />
@@ -474,6 +478,7 @@ export default function AdminPortal({ onBackToHome }) {
               </div>
               <select
                 value={selectedRegion}
+                aria-label="Filter region"
                 onChange={(e) => setSelectedRegion(e.target.value)}
                 className="w-full pl-9 pr-8 py-2.5 bg-neutral-900/80 border border-white/10 rounded-xl text-xs sm:text-sm text-gray-100 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all appearance-none cursor-pointer"
               >
@@ -498,6 +503,7 @@ export default function AdminPortal({ onBackToHome }) {
               </div>
               <select
                 value={selectedKomselFilter}
+                aria-label="Filter komsel"
                 onChange={(e) => setSelectedKomselFilter(e.target.value)}
                 className="w-full pl-9 pr-8 py-2.5 bg-neutral-900/80 border border-white/10 rounded-xl text-xs sm:text-sm text-gray-100 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all appearance-none cursor-pointer"
               >
@@ -523,6 +529,7 @@ export default function AdminPortal({ onBackToHome }) {
               </div>
               <select
                 value={selectedCheckInFilter}
+                aria-label="Filter presensi"
                 onChange={(e) => setSelectedCheckInFilter(e.target.value)}
                 className="w-full pl-9 pr-8 py-2.5 bg-neutral-900/80 border border-white/10 rounded-xl text-xs sm:text-sm text-gray-100 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all appearance-none cursor-pointer"
               >
@@ -582,12 +589,13 @@ export default function AdminPortal({ onBackToHome }) {
               <table className="w-full text-left text-xs">
                 <thead className="bg-black/60 text-amber-200 border-b border-white/10 uppercase tracking-wider text-[10px]">
                   <tr>
-                    <th className="py-3.5 px-4 font-semibold">No</th>
-                    <th className="py-3.5 px-4 font-semibold">Kode Tiket</th>
+                    {/* On phones only name, check-in and actions show, so the check-in button fits on screen */}
+                    <th className="hidden md:table-cell py-3.5 px-4 font-semibold">No</th>
+                    <th className="hidden md:table-cell py-3.5 px-4 font-semibold">Kode Tiket</th>
                     <th className="py-3.5 px-4 font-semibold">Nama & NPM</th>
-                    <th className="py-3.5 px-4 font-semibold">Kontak</th>
-                    <th className="py-3.5 px-4 font-semibold">Region & Jurusan</th>
-                    <th className="py-3.5 px-4 font-semibold">Kakak Komsel</th>
+                    <th className="hidden md:table-cell py-3.5 px-4 font-semibold">Kontak</th>
+                    <th className="hidden md:table-cell py-3.5 px-4 font-semibold">Region & Jurusan</th>
+                    <th className="hidden md:table-cell py-3.5 px-4 font-semibold">Kakak Komsel</th>
                     <th className="py-3.5 px-4 font-semibold text-center">Presensi</th>
                     <th className="py-3.5 px-4 font-semibold text-right">Aksi</th>
                   </tr>
@@ -598,19 +606,20 @@ export default function AdminPortal({ onBackToHome }) {
                       key={row.ticketId || idx}
                       className="hover:bg-white/[0.03] transition-colors"
                     >
-                      <td className="py-3.5 px-4 text-gray-400 font-mono">{idx + 1}</td>
-                      <td className="py-3.5 px-4 font-mono font-medium text-amber-300">
+                      <td className="hidden md:table-cell py-3.5 px-4 text-gray-400 font-mono">{idx + 1}</td>
+                      <td className="hidden md:table-cell py-3.5 px-4 font-mono font-medium text-amber-300 whitespace-nowrap">
                         {row.ticketId}
                       </td>
                       <td className="py-3.5 px-4">
                         <div className="font-semibold text-white">{row.fullName}</div>
                         <div className="text-[11px] font-mono text-gray-400">{row.npm}</div>
+                        <div className="md:hidden text-[11px] font-mono text-amber-300">{row.ticketId}</div>
                       </td>
-                      <td className="py-3.5 px-4 space-y-0.5">
+                      <td className="hidden md:table-cell py-3.5 px-4 space-y-0.5">
                         <div className="flex items-center gap-1.5 text-gray-300">
                           <Phone className="w-3 h-3 text-emerald-400 shrink-0" />
                           <a
-                            href={`https://wa.me/${row.whatsapp?.replace(/\D/g, '')}`}
+                            href={`https://wa.me/${intlPhone(row.whatsapp?.replace(/\D/g, '') || '')}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="hover:underline hover:text-emerald-300"
@@ -623,7 +632,7 @@ export default function AdminPortal({ onBackToHome }) {
                           <span className="truncate">{row.email}</span>
                         </div>
                       </td>
-                      <td className="py-3.5 px-4">
+                      <td className="hidden md:table-cell py-3.5 px-4">
                         <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-400/15 text-amber-200 border border-amber-400/20 mb-1">
                           {regionName(row.region)?.toUpperCase()}
                         </span>
@@ -631,13 +640,13 @@ export default function AdminPortal({ onBackToHome }) {
                           {row.faculty || '-'}
                         </div>
                       </td>
-                      <td className="py-3.5 px-4">
-                        {row.mentorName === '-' ? (
+                      <td className="hidden md:table-cell py-3.5 px-4">
+                        {row.komselStatus?.includes('Belum memiliki') ? (
                           <span className="text-amber-300/80 italic text-[11px]">
                             Belum Komsel
                           </span>
                         ) : (
-                          <span className="text-gray-200 font-medium">{row.mentorName}</span>
+                          <span className="text-gray-200 font-medium">{row.mentorName || '-'}</span>
                         )}
                       </td>
                       <td className="py-3.5 px-4 text-center">
@@ -697,6 +706,7 @@ export default function AdminPortal({ onBackToHome }) {
       </div>
 
       {/* PARTICIPANT DETAIL TICKET MODAL */}
+      {createPortal(
       <AnimatePresence>
         {selectedParticipant && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 sm:backdrop-blur-md overflow-y-auto">
@@ -802,9 +812,12 @@ export default function AdminPortal({ onBackToHome }) {
             </motion.div>
           </div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body
+      )}
 
       {/* DELETE CONFIRMATION MODAL */}
+      {createPortal(
       <AnimatePresence>
         {deleteConfirmId && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 sm:backdrop-blur-md">
@@ -845,7 +858,9 @@ export default function AdminPortal({ onBackToHome }) {
             </motion.div>
           </div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body
+      )}
         </motion.section>
       )}
     </AnimatePresence>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   User,
@@ -24,6 +25,7 @@ import {
 import confetti from 'canvas-confetti';
 import { addRegistration } from '../utils/storage';
 import { REGIONS, regionName as getRegionName } from '../utils/regions';
+import { EVENT } from '../utils/event';
 
 const KOMSEL_OPTIONS = [
   'Sudah memiliki Komsel (Tuliskan nama Kakak Komsel di bawah)',
@@ -192,7 +194,7 @@ export default function RegistrationSection({ onBackToHero }) {
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
             {/* Field: Nama Lengkap */}
             <div>
-              <label className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5 sm:mb-2">
+              <label htmlFor="reg-fullName" className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5 sm:mb-2">
                 Nama Lengkap <span className="text-rose-400">*</span>
               </label>
               <div className="relative">
@@ -201,12 +203,13 @@ export default function RegistrationSection({ onBackToHero }) {
                 </div>
                 <input
                   type="text"
+                  id="reg-fullName"
                   name="fullName"
                   required
                   value={formData.fullName}
                   onChange={handleChange}
                   placeholder="Contoh: Jonathan Kevin Situmorang"
-                  className="w-full pl-10 pr-4 py-3 bg-neutral-900/70 border border-white/10 rounded-xl text-base sm:text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all backdrop-blur-sm"
+                  className="w-full pl-10 pr-4 py-3 bg-neutral-900/70 border border-white/10 rounded-xl text-base sm:text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
                 />
               </div>
             </div>
@@ -215,7 +218,7 @@ export default function RegistrationSection({ onBackToHero }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
               <div>
                 <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-                  <label className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase">
+                  <label htmlFor="reg-npm" className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase">
                     NPM (Maks 8 Angka) <span className="text-rose-400">*</span>
                   </label>
                   <span className="text-[10px] font-mono text-gray-400">
@@ -229,6 +232,7 @@ export default function RegistrationSection({ onBackToHero }) {
                   <input
                     type="text"
                     inputMode="numeric"
+                    id="reg-npm"
                     name="npm"
                     required
                     value={formData.npm}
@@ -241,7 +245,7 @@ export default function RegistrationSection({ onBackToHero }) {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5 sm:mb-2">
+                <label htmlFor="reg-region" className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5 sm:mb-2">
                   Region Kampus <span className="text-rose-400">*</span>
                 </label>
                 <div className="relative">
@@ -249,6 +253,7 @@ export default function RegistrationSection({ onBackToHero }) {
                     <MapPin className="w-4 h-4 text-amber-300/70" />
                   </div>
                   <select
+                    id="reg-region"
                     name="region"
                     value={formData.region}
                     onChange={handleChange}
@@ -270,7 +275,7 @@ export default function RegistrationSection({ onBackToHero }) {
             {/* Field: Email & WhatsApp (2 Columns) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
               <div>
-                <label className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5 sm:mb-2">
+                <label htmlFor="reg-email" className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5 sm:mb-2">
                   Email Aktif <span className="text-rose-400">*</span>
                 </label>
                 <div className="relative">
@@ -279,6 +284,7 @@ export default function RegistrationSection({ onBackToHero }) {
                   </div>
                   <input
                     type="email"
+                    id="reg-email"
                     name="email"
                     required
                     value={formData.email}
@@ -291,8 +297,8 @@ export default function RegistrationSection({ onBackToHero }) {
 
               <div>
                 <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-                  <label className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase">
-                    Nomor WhatsApp (Maks 13 Angka) <span className="text-rose-400">*</span>
+                  <label htmlFor="reg-whatsapp" className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase">
+                    Nomor WhatsApp <span className="text-rose-400">*</span>
                   </label>
                   <span className="text-[10px] font-mono text-gray-400">
                     {formData.whatsapp.length}/13 angka
@@ -305,6 +311,7 @@ export default function RegistrationSection({ onBackToHero }) {
                   <input
                     type="tel"
                     inputMode="numeric"
+                    id="reg-whatsapp"
                     name="whatsapp"
                     required
                     value={formData.whatsapp}
@@ -319,7 +326,7 @@ export default function RegistrationSection({ onBackToHero }) {
 
             {/* Field: Status Komsel & Nama Kakak Komsel */}
             <div className="space-y-3 p-3.5 sm:p-4 rounded-xl bg-amber-950/15 border border-amber-400/15">
-              <label className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase">
+              <label htmlFor="reg-komselStatus" className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase">
                 Kelompok Sel (Komsel) & Mentor <span className="text-rose-400">*</span>
               </label>
 
@@ -328,6 +335,7 @@ export default function RegistrationSection({ onBackToHero }) {
                   <Users className="w-4 h-4 text-amber-300/70" />
                 </div>
                 <select
+                  id="reg-komselStatus"
                   name="komselStatus"
                   value={formData.komselStatus}
                   onChange={handleChange}
@@ -335,7 +343,8 @@ export default function RegistrationSection({ onBackToHero }) {
                 >
                   {KOMSEL_OPTIONS.map((opt, idx) => (
                     <option key={idx} value={opt} className="bg-neutral-900 text-gray-100">
-                      {opt}
+                      {/* Short label so it fits on phones; the full text stays the stored value */}
+                      {opt.replace(/\s*\(.*\)$/, '')}
                     </option>
                   ))}
                 </select>
@@ -344,7 +353,7 @@ export default function RegistrationSection({ onBackToHero }) {
               {/* Kakak Komsel Input */}
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="block text-[11px] font-medium tracking-wider text-gray-300 uppercase">
+                  <label htmlFor="reg-mentorName" className="block text-[11px] font-medium tracking-wider text-gray-300 uppercase">
                     Nama Kakak Komsel
                   </label>
                   {isBelumPunya && (
@@ -355,6 +364,7 @@ export default function RegistrationSection({ onBackToHero }) {
                 </div>
                 <input
                   type="text"
+                  id="reg-mentorName"
                   name="mentorName"
                   value={formData.mentorName}
                   onChange={handleChange}
@@ -371,7 +381,7 @@ export default function RegistrationSection({ onBackToHero }) {
 
             {/* Field: Jurusan / Fakultas */}
             <div>
-              <label className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5 sm:mb-2">
+              <label htmlFor="reg-faculty" className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5 sm:mb-2">
                 Jurusan / Fakultas
               </label>
               <div className="relative">
@@ -380,6 +390,7 @@ export default function RegistrationSection({ onBackToHero }) {
                 </div>
                 <input
                   type="text"
+                  id="reg-faculty"
                   name="faculty"
                   value={formData.faculty}
                   onChange={handleChange}
@@ -545,15 +556,15 @@ export default function RegistrationSection({ onBackToHero }) {
                 <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1 mt-2">
                   <div className="flex items-center gap-1.5 text-gray-300 text-[11px]">
                     <Calendar className="w-3.5 h-3.5 text-amber-300" />
-                    <span>Jumat, 18 Desember 2026</span>
+                    <span>{EVENT.date}</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-gray-300 text-[11px]">
                     <Clock className="w-3.5 h-3.5 text-amber-300" />
-                    <span>16.30 WIB — Selesai</span>
+                    <span>{EVENT.time}</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-gray-300 text-[11px]">
                     <MapPin className="w-3.5 h-3.5 text-amber-300" />
-                    <span>Auditorium Kampus Gunadarma</span>
+                    <span>{EVENT.venue}</span>
                   </div>
                 </div>
               </div>
@@ -584,13 +595,14 @@ export default function RegistrationSection({ onBackToHero }) {
             </div>
 
             <p className="text-[11px] text-gray-400 text-center mt-3">
-              QR Code & Tiket resmi akan diterbitkan dan dikirim otomatis setelah konfirmasi
+              Pratinjau tiket. Kode tiket resmi muncul setelah Anda menekan Konfirmasi.
             </p>
           </div>
         </motion.div>
       </div>
 
       {/* SUCCESS CONFIRMATION MODAL WITH AUTOMATIC WHATSAPP & EMAIL DISPATCH */}
+      {createPortal(
       <AnimatePresence>
         {registered && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
@@ -695,7 +707,9 @@ export default function RegistrationSection({ onBackToHero }) {
             </motion.div>
           </div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body
+      )}
     </section>
   );
 }

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Sparkles, Calendar, MapPin } from 'lucide-react';
 import ChristmasStar from './ChristmasStar';
 import TreeSilhouette from './TreeSilhouette';
+import { EVENT } from '../utils/event';
 
 export default function HeroSection({ onStartRegistration }) {
   const [openingComplete, setOpeningComplete] = useState(false);
@@ -97,7 +98,7 @@ export default function HeroSection({ onStartRegistration }) {
           style={{ willChange: 'transform, opacity' }}
         >
           <h1
-            className="text-5xl sm:text-7xl md:text-8xl lg:text-[10rem] font-extrabold tracking-wide sm:tracking-wider font-['Cinzel'] leading-none text-gold-gradient uppercase py-1 select-none"
+            className="text-5xl sm:text-7xl md:text-8xl lg:text-[10rem] lg:[@media(max-height:820px)]:text-8xl font-extrabold tracking-wide sm:tracking-wider font-['Cinzel'] leading-none text-gold-gradient uppercase py-1 select-none"
             style={{
               textShadow:
                 '0 0 20px rgba(254, 240, 138, 0.35), 0 0 50px rgba(234, 179, 8, 0.2)',
@@ -199,12 +200,12 @@ export default function HeroSection({ onStartRegistration }) {
         >
           <div className="flex items-center gap-1.5">
             <Calendar className="w-3.5 h-3.5 text-amber-300/80 shrink-0" />
-            <span>Desember 2026</span>
+            <span>{EVENT.date}</span>
           </div>
           <div className="hidden sm:inline w-1 h-1 rounded-full bg-amber-400/40" />
           <div className="flex items-center gap-1.5">
             <MapPin className="w-3.5 h-3.5 text-amber-300/80 shrink-0" />
-            <span>Auditorium Universitas Gunadarma</span>
+            <span>{EVENT.venue}</span>
           </div>
         </motion.div>
       </div>

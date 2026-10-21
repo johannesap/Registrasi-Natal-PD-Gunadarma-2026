@@ -2,6 +2,8 @@ import crypto from 'node:crypto';
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import { regionName } from '../../src/utils/regions.js';
+import { EVENT } from '../../src/utils/event.js';
+import { intlPhone } from '../../src/utils/phone.js';
 import {
   listRegistrations,
   findExistingRegistration,
@@ -74,12 +76,6 @@ router.get('/registrations', requireAdmin, async (req, res) => {
   res.json({ success: true, total: list.length, data: list });
 });
 
-// 0812… / 812… / 62812… → 62812…
-function intlPhone(digits) {
-  if (digits.startsWith('0')) return '62' + digits.slice(1);
-  return digits.startsWith('62') ? digits : '62' + digits;
-}
-
 // Click-to-chat link that opens WhatsApp with the ticket message for the participant's own number
 function whatsappLink(r) {
   const phone = intlPhone(r.whatsapp);
@@ -97,9 +93,9 @@ function whatsappLink(r) {
     `• Kakak Komsel: *${r.mentorName}*\n` +
     `• Jurusan: *${r.faculty}*\n\n` +
     `🗓️ *WAKTU & TEMPAT:*\n` +
-    `• Tanggal: Jumat, 18 Desember 2026\n` +
-    `• Pukul: 16.30 WIB - Selesai\n` +
-    `• Lokasi: Auditorium Kampus Gunadarma\n\n` +
+    `• Tanggal: ${EVENT.date}\n` +
+    `• Pukul: ${EVENT.time}\n` +
+    `• Lokasi: ${EVENT.venue}\n\n` +
     `_Simpan pesan dan kode tiket ini untuk ditunjukkan saat registrasi ulang di pintu masuk auditorium._\n\n` +
     `Sampai berjumpa dalam sukacita Natal! Tuhan Yesus memberkati. 🙏✨`;
 
