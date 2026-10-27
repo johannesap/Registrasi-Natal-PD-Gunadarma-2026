@@ -44,3 +44,14 @@ test('a valid token gets past the auth check', async () => {
   // No database in tests: anything but 401 means the request got through auth
   assert.equal(res.status, 500);
 });
+
+test('ticket QR image only renders real ticket codes', async () => {
+  const ok = await call('/tickets/natal-ug-1234-5678/qr.png', 'GET');
+  assert.equal(ok.status, 200);
+  assert.equal(ok.headers.get('content-type'), 'image/png');
+
+  // Not an open QR generator: no arbitrary text or links under our domain
+  for (const bad of ['https%3A%2F%2Fevil.example', 'NATAL-UG-1234-5678X', 'hello']) {
+    assert.equal((await call(`/tickets/${bad}/qr.png`, 'GET')).status, 404, bad);
+  }
+});

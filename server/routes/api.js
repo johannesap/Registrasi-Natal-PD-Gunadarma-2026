@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import express from 'express';
 import bcrypt from 'bcryptjs';
+import QRCode from 'qrcode';
 import { regionName } from '../../src/utils/regions.js';
 import { EVENT } from '../../src/utils/event.js';
 import { intlPhone } from '../../src/utils/phone.js';
@@ -103,8 +104,19 @@ router.get('/registrations', sekretariatOnly, async (req, res) => {
   res.json({ success: true, total: list.length, data: list });
 });
 
+// Only real ticket codes, so this cannot be used to put arbitrary QR codes (e.g. phishing links) on our domain
+const TICKET_CODE = /^NATAL-UG-\d{4}-\d{4}$/;
+
+// GET /api/tickets/:ticketId/qr.png - the check-in QR as an image, linked from the WhatsApp message
+router.get('/tickets/:ticketId/qr.png', async (req, res) => {
+  const code = req.params.ticketId.trim().toUpperCase();
+  if (!TICKET_CODE.test(code)) return res.status(404).json({ success: false, message: 'Tiket tidak ditemukan' });
+  res.type('png').set('Cache-Control', 'public, max-age=31536000, immutable');
+  res.send(await QRCode.toBuffer(code, { margin: 2, width: 480 }));
+});
+
 // Click-to-chat link that opens WhatsApp with the ticket message for the participant's own number
-function whatsappLink(r) {
+function whatsappLink(r, siteUrl) {
   const phone = intlPhone(r.whatsapp);
 
   const text =
@@ -119,11 +131,13 @@ function whatsappLink(r) {
     `• Region Kampus: *${regionName(r.region)}*\n` +
     `• Kakak Komsel: *${r.mentorName}*\n` +
     `• Jurusan: *${r.faculty}*\n\n` +
+    `🔳 *QR CHECK-IN* (buka & tunjukkan di pintu masuk):\n` +
+    `${siteUrl}/api/tickets/${encodeURIComponent(r.ticketId)}/qr.png\n\n` +
     `🗓️ *WAKTU & TEMPAT:*\n` +
     `• Tanggal: ${EVENT.date}\n` +
     `• Pukul: ${EVENT.time}\n` +
     `• Lokasi: ${EVENT.venue}\n\n` +
-    `_Simpan pesan dan kode tiket ini untuk ditunjukkan saat registrasi ulang di pintu masuk auditorium._\n\n` +
+    `_Simpan pesan ini dan tunjukkan QR check-in di atas saat registrasi ulang di pintu masuk auditorium._\n\n` +
     `Sampai berjumpa dalam sukacita Natal! Tuhan Yesus memberkati. 🙏✨`;
 
   return `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`;
@@ -142,6 +156,10 @@ router.post('/register', async (req, res) => {
   const session = str(body.session) || 'Sesi Utama (16.30 WIB - Selesai)';
 
   const fail = (message) => res.status(422).json({ success: false, message });
+
+  // The site the browser registered on (sent as Origin with the POST); the QR image link in WhatsApp points there
+  const origin = req.get('origin');
+  const siteUrl = /^https?:\/\//.test(origin) ? origin : `https://${req.get('host')}`;
 
   // Validation rules
   if (!fullName) return fail('Nama lengkap wajib diisi.');
@@ -175,7 +193,7 @@ router.post('/register', async (req, res) => {
       alreadyRegistered: true,
       message: 'Anda sudah terdaftar sebelumnya. Ini tiket Anda.',
       data: existing,
-      dispatch: { whatsappUrl: whatsappLink(existing) },
+      dispatch: { whatsappUrl: whatsappLink(existing, siteUrl) },
     });
   }
 
@@ -207,7 +225,7 @@ router.post('/register', async (req, res) => {
     success: true,
     message: 'Registrasi berhasil! Tiket resmi telah diterbitkan.',
     data: record,
-    dispatch: { whatsappUrl: whatsappLink(record) },
+    dispatch: { whatsappUrl: whatsappLink(record, siteUrl) },
   });
 });
 

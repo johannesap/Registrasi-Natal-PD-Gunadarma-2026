@@ -10,6 +10,8 @@ import {
   Search,
   CheckCircle2,
   Eye,
+  EyeOff,
+  ScanLine,
   Trash2,
   RefreshCw,
   Users,
@@ -37,11 +39,13 @@ import { REGIONS, regionName } from '../utils/regions';
 import { intlPhone } from '../utils/phone';
 import AccountManager from './AccountManager';
 import ChangePasswordDialog from './ChangePasswordDialog';
+import CheckInScanner from './CheckInScanner';
 
 export default function AdminPortal({ onBackToHome }) {
   const [isAuthenticated, setIsAuthenticated] = useState(isAdminAuthenticated());
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
@@ -56,6 +60,7 @@ export default function AdminPortal({ onBackToHome }) {
 
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
 
   // admin only manages accounts; sekretariat gets the registrations dashboard
   const role = isAuthenticated ? currentRole() : null;
@@ -69,17 +74,7 @@ export default function AdminPortal({ onBackToHome }) {
   const loadData = async () => {
     setIsLoadingData(true);
     try {
-      const data = await fetchRegistrations();
-      setRegistrations(data);
-
-      // Opened from a scanned ticket QR (?tiket=...): show that participant, ready to check in
-      const scanned = new URLSearchParams(window.location.search).get('tiket');
-      if (scanned) {
-        window.history.replaceState(null, '', window.location.pathname + window.location.hash);
-        const found = data.find((r) => r.ticketId === scanned.trim().toUpperCase());
-        if (found) setSelectedParticipant(found);
-        else window.alert(`Tiket ${scanned} tidak ditemukan.`);
-      }
+      setRegistrations(await fetchRegistrations());
     } catch (err) {
       handleActionError(err);
     } finally {
@@ -109,6 +104,7 @@ export default function AdminPortal({ onBackToHome }) {
   const handleLogout = () => {
     logoutAdmin();
     setIsAuthenticated(false);
+    setShowScanner(false);
     setUsername('');
     setPassword('');
   };
@@ -124,14 +120,43 @@ export default function AdminPortal({ onBackToHome }) {
     window.alert(err.message);
   };
 
+  const saveCheckIn = async (ticketId, checkedIn) => {
+    const updated = await setCheckIn(ticketId, checkedIn);
+    setRegistrations((list) => list.map((r) => (r.ticketId === updated.ticketId ? updated : r)));
+    setSelectedParticipant((p) => (p?.ticketId === updated.ticketId ? updated : p));
+    return updated;
+  };
+
   // Sends the wanted state, not "flip", so a double tap cannot undo a check-in
   const handleToggleCheckIn = async (row) => {
     try {
-      const updated = await setCheckIn(row.ticketId, !row.isCheckedIn);
-      setRegistrations((list) => list.map((r) => (r.ticketId === updated.ticketId ? updated : r)));
-      setSelectedParticipant((p) => (p?.ticketId === updated.ticketId ? updated : p));
+      await saveCheckIn(row.ticketId, !row.isCheckedIn);
     } catch (err) {
       handleActionError(err);
+    }
+  };
+
+  // Scanned QR: the ticket code, or the ?tiket= link on tickets issued before the scanner existed
+  const handleScan = async (data) => {
+    let code = data;
+    try {
+      code = new URL(data).searchParams.get('tiket') ?? data;
+    } catch {
+      // not a link: the QR is the code itself
+    }
+    code = code.trim().toUpperCase();
+
+    // ponytail: "already" uses this device's list; a ticket checked in on another phone since the last Refresh shows as HADIR
+    const known = registrations.find((r) => r.ticketId === code);
+    if (known?.isCheckedIn) {
+      return { ok: false, text: `${known.fullName} sudah check-in sebelumnya (${known.checkedInAt}).` };
+    }
+    try {
+      const updated = await saveCheckIn(code, true);
+      return { ok: true, text: `HADIR: ${updated.fullName}` };
+    } catch (err) {
+      if (err.status === 401) handleSessionExpired(err);
+      return { ok: false, text: err.status === 404 ? `Tiket ${code} tidak terdaftar.` : err.message };
     }
   };
 
@@ -304,14 +329,23 @@ export default function AdminPortal({ onBackToHome }) {
                   </div>
                   <input
                     id="admin-password"
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     autoComplete="current-password"
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Masukkan kata sandi"
-                    className="w-full pl-10 pr-4 py-3 bg-neutral-900/80 border border-white/10 rounded-xl text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
+                    className="w-full pl-10 pr-11 py-3 bg-neutral-900/80 border border-white/10 rounded-xl text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                    aria-pressed={showPassword}
+                    className="absolute inset-y-0 right-0 px-3.5 flex items-center text-amber-300/70 hover:text-amber-200 cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 
@@ -371,6 +405,16 @@ export default function AdminPortal({ onBackToHome }) {
           </div>
 
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto">
+            {/* Door check-in by camera */}
+            <button
+              onClick={() => setShowScanner(true)}
+              type="button"
+              className="gold-btn w-full sm:w-auto flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-neutral-950 text-xs font-semibold tracking-wider uppercase cursor-pointer"
+            >
+              <ScanLine className="w-4 h-4" />
+              <span>Scan QR Check-In</span>
+            </button>
+
             {/* Live Refresh Button */}
             <button
               onClick={loadData}
@@ -738,6 +782,10 @@ export default function AdminPortal({ onBackToHome }) {
           )}
         </div>
       </div>
+
+      {showScanner && role === 'sekretariat' && (
+        <CheckInScanner onScan={handleScan} onClose={() => setShowScanner(false)} />
+      )}
 
       {showPasswordDialog && (
         <ChangePasswordDialog

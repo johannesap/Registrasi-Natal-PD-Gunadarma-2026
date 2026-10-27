@@ -35,12 +35,11 @@ const KOMSEL_OPTIONS = [
   'Tamu / Undangan Khusus',
 ];
 
-// Check-in QR: panitia scan it with any phone camera and the admin page opens on this ticket
+// Check-in QR holding the ticket code; panitia scan it with "Scan QR" on the sekretariat page
 function TicketQR({ ticketId, className }) {
   const [src, setSrc] = useState('');
   useEffect(() => {
-    const url = `${window.location.origin}/?tiket=${encodeURIComponent(ticketId)}#admin`;
-    QRCode.toDataURL(url, { margin: 2, width: 320 }).then(setSrc, console.error);
+    QRCode.toDataURL(ticketId, { margin: 2, width: 320 }).then(setSrc, console.error);
   }, [ticketId]);
   return src ? <img src={src} alt={`QR check-in tiket ${ticketId}`} className={`bg-white rounded-lg ${className}`} /> : null;
 }
