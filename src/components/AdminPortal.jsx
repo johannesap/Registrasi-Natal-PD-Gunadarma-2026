@@ -69,7 +69,17 @@ export default function AdminPortal({ onBackToHome }) {
   const loadData = async () => {
     setIsLoadingData(true);
     try {
-      setRegistrations(await fetchRegistrations());
+      const data = await fetchRegistrations();
+      setRegistrations(data);
+
+      // Opened from a scanned ticket QR (?tiket=...): show that participant, ready to check in
+      const scanned = new URLSearchParams(window.location.search).get('tiket');
+      if (scanned) {
+        window.history.replaceState(null, '', window.location.pathname + window.location.hash);
+        const found = data.find((r) => r.ticketId === scanned.trim().toUpperCase());
+        if (found) setSelectedParticipant(found);
+        else window.alert(`Tiket ${scanned} tidak ditemukan.`);
+      }
     } catch (err) {
       handleActionError(err);
     } finally {

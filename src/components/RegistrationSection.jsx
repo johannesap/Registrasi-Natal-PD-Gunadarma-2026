@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import QRCode from 'qrcode';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   User,
@@ -33,6 +34,16 @@ const KOMSEL_OPTIONS = [
   'Alumni / Pengurus',
   'Tamu / Undangan Khusus',
 ];
+
+// Check-in QR: panitia scan it with any phone camera and the admin page opens on this ticket
+function TicketQR({ ticketId, className }) {
+  const [src, setSrc] = useState('');
+  useEffect(() => {
+    const url = `${window.location.origin}/?tiket=${encodeURIComponent(ticketId)}#admin`;
+    QRCode.toDataURL(url, { margin: 2, width: 320 }).then(setSrc, console.error);
+  }, [ticketId]);
+  return src ? <img src={src} alt={`QR check-in tiket ${ticketId}`} className={`bg-white rounded-lg ${className}`} /> : null;
+}
 
 // The e-ticket card: live preview of the form, and the printed ticket once ticketId is known
 function TicketCard({ p, ticketId }) {
@@ -172,7 +183,10 @@ function TicketCard({ p, ticketId }) {
           </div>
         )}
 
-        {/* Stylized Barcode SVG */}
+        {ticketId ? (
+          <TicketQR ticketId={ticketId} className="w-24 h-24" />
+        ) : (
+        /* Stylized Barcode SVG */
         <div className="flex items-center gap-0.5 opacity-80 h-7">
           {[2, 4, 1, 3, 2, 5, 2, 1, 4, 2, 3, 1, 5, 2, 3, 2].map((w, i) => (
             <div
@@ -182,6 +196,7 @@ function TicketCard({ p, ticketId }) {
             />
           ))}
         </div>
+        )}
       </div>
     </div>
   );
@@ -668,8 +683,15 @@ export default function RegistrationSection({ onBackToHero }) {
                 </div>
                 <p>
                   Tekan tombol hijau di bawah untuk membuka WhatsApp, lalu kirim pesan tiket itu ke nomor Anda sendiri.
-                  Anda juga bisa mencetak atau screenshot halaman ini. Tunjukkan kode tiket di pintu masuk.
+                  Anda juga bisa mencetak atau screenshot halaman ini. Tunjukkan QR Code di bawah di pintu masuk.
                 </p>
+              </div>
+
+              <div className="mb-5">
+                <TicketQR ticketId={registered.ticketId} className="w-44 h-44 mx-auto" />
+                <span className="text-[10px] uppercase tracking-widest text-amber-300 block mt-2">
+                  QR Check-In Kehadiran
+                </span>
               </div>
 
               {/* Pass Summary Details */}
