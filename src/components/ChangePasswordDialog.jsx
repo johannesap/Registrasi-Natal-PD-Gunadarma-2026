@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { KeyRound, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { changePassword } from '../utils/storage';
+import PasswordInput from './PasswordInput';
 
 const inputClass =
   'w-full px-4 py-3 bg-neutral-900/80 border border-white/10 rounded-xl text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all';
@@ -57,15 +58,15 @@ export default function ChangePasswordDialog({ onClose, onAuthError }) {
             </p>
             <div>
               <label htmlFor="pw-current" className={labelClass}>Password Lama</label>
-              <input id="pw-current" name="current" type="password" required autoComplete="current-password" value={form.current} onChange={handleChange} className={inputClass} />
+              <PasswordInput id="pw-current" name="current" required autoComplete="current-password" value={form.current} onChange={handleChange} className={inputClass} />
             </div>
             <div>
               <label htmlFor="pw-next" className={labelClass}>Password Baru</label>
-              <input id="pw-next" name="next" type="password" required minLength={8} maxLength={72} autoComplete="new-password" placeholder="Minimal 8 karakter" value={form.next} onChange={handleChange} className={inputClass} />
+              <PasswordInput id="pw-next" name="next" required minLength={8} maxLength={72} autoComplete="new-password" placeholder="Minimal 8 karakter" value={form.next} onChange={handleChange} className={inputClass} />
             </div>
             <div>
               <label htmlFor="pw-confirm" className={labelClass}>Ulangi Password Baru</label>
-              <input id="pw-confirm" name="confirm" type="password" required minLength={8} maxLength={72} autoComplete="new-password" value={form.confirm} onChange={handleChange} className={inputClass} />
+              <PasswordInput id="pw-confirm" name="confirm" required minLength={8} maxLength={72} autoComplete="new-password" value={form.confirm} onChange={handleChange} className={inputClass} />
             </div>
             {error && (
               <div role="alert" className="p-3 rounded-xl bg-rose-950/40 border border-rose-500/40 text-rose-200 text-xs flex items-center gap-2">

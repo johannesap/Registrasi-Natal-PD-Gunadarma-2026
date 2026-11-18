@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, LogOut, UserPlus, Pencil, Trash2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { fetchUsers, saveUser, deleteUser } from '../utils/storage';
+import PasswordInput from './PasswordInput';
 
 const ROLE_LABELS = {
   admin: 'Admin (kelola akun)',
@@ -149,10 +150,9 @@ export default function AccountManager({ onBackToHome, onLogout, onAuthError }) 
             </div>
             <div>
               <label htmlFor="acc-password" className={labelClass}>Password</label>
-              <input
+              <PasswordInput
                 id="acc-password"
                 name="password"
-                type="password"
                 required={!form.id}
                 minLength={8}
                 maxLength={72}
