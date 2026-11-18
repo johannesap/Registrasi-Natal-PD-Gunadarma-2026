@@ -1,9 +1,10 @@
 import React from 'react';
 import { Heart, Sparkles, MapPin, ShieldCheck } from 'lucide-react';
+import { EVENT } from '../utils/event';
 
 export default function Footer({ onNavigate }) {
   return (
-    <footer className="relative w-full border-t border-amber-400/10 bg-[#02050c]/80 backdrop-blur-xl py-8 sm:py-12 px-4 sm:px-6 z-20">
+    <footer className="relative w-full border-t border-amber-400/10 bg-[#06140f]/85 backdrop-blur-xl py-8 sm:py-12 px-4 sm:px-6 z-20">
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 sm:gap-8 text-center md:text-left">
         {/* Brand & Verse */}
         <div className="space-y-2 max-w-md">
@@ -17,7 +18,7 @@ export default function Footer({ onNavigate }) {
             &ldquo;Sebab seorang anak telah lahir untuk kita, seorang putera telah diberikan untuk kita; lambang pemerintahan ada di atas bahunya...&rdquo; — Yesaya 9:5
           </p>
           <p className="text-[11px] sm:text-xs text-gray-500 font-light">
-            Merayakan Kasih, Menyalakan Harapan bersama seluruh mahasiswa dan alumni Universitas Gunadarma.
+            &ldquo;{EVENT.theme}&rdquo; bersama seluruh mahasiswa dan alumni Universitas Gunadarma.
           </p>
         </div>
 

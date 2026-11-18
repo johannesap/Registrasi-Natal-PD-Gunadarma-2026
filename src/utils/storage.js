@@ -127,7 +127,7 @@ const csvCell = (value) =>
     .replace(/^[=+\-@\t\r]/, "'$&")
     .replace(/"/g, '""')}"`;
 
-// Digits only, written as ="..." so Excel keeps leading zeros of NPM and phone numbers
+// Digits only, written as ="..." so Excel keeps the leading zero of phone numbers
 const csvDigits = (value) => `="${String(value ?? '').replace(/\D/g, '')}"`;
 
 // Export to CSV Function
@@ -136,13 +136,15 @@ export const exportRegistrationsToCSV = (registrations) => {
     'No',
     'Kode Tiket',
     'Nama Lengkap',
-    'NPM',
+    'Jenis Kelamin',
     'Email',
     'Nomor WhatsApp',
     'Region Kampus',
     'Status Komsel',
     'Nama Kakak Komsel',
     'Jurusan/Fakultas',
+    'Keberangkatan',
+    'Area Keberangkatan',
     'Status Check-In',
     'Waktu Check-In',
     'Waktu Registrasi',
@@ -152,13 +154,15 @@ export const exportRegistrationsToCSV = (registrations) => {
     idx + 1,
     csvCell(r.ticketId),
     csvCell(r.fullName),
-    csvDigits(r.npm),
+    csvCell(r.gender),
     csvCell(r.email),
     csvDigits(r.whatsapp),
     csvCell(regionName(r.region)),
     csvCell(r.komselStatus),
     csvCell(r.mentorName || '-'),
     csvCell(r.faculty || '-'),
+    csvCell(r.departure),
+    csvCell(r.departureArea),
     r.isCheckedIn ? 'Hadir' : 'Belum Hadir',
     csvCell(r.checkedInAt || '-'),
     csvCell(r.registeredAt),

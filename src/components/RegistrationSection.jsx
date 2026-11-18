@@ -4,7 +4,6 @@ import QRCode from 'qrcode';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   User,
-  Hash,
   Users,
   MapPin,
   Phone,
@@ -22,11 +21,14 @@ import {
   MessageSquare,
   ExternalLink,
   AlertCircle,
+  Bus,
+  Car,
+  Navigation,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { addRegistration } from '../utils/storage';
 import { REGIONS, regionName as getRegionName } from '../utils/regions';
-import { EVENT } from '../utils/event';
+import { EVENT, GENDERS, DEPARTURES, MEETING_POINTS, mapsUrl } from '../utils/event';
 
 const KOMSEL_OPTIONS = [
   'Sudah memiliki Komsel (Tuliskan nama Kakak Komsel di bawah)',
@@ -44,12 +46,43 @@ function TicketQR({ ticketId, className }) {
   return src ? <img src={src} alt={`QR check-in tiket ${ticketId}`} className={`bg-white rounded-lg ${className}`} /> : null;
 }
 
+// Pill buttons backed by real radio inputs, so keyboard use and `required` still work
+function ChoicePills({ legend, name, options, value, onChange, icons = {} }) {
+  return (
+    <fieldset>
+      <legend className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5 sm:mb-2">
+        {legend} <span className="text-rose-400">*</span>
+      </legend>
+      <div className="grid grid-cols-2 gap-2.5">
+        {options.map((opt) => {
+          const Icon = icons[opt];
+          const on = value === opt;
+          return (
+            <label
+              key={opt}
+              className={`flex items-center justify-center gap-2 py-3 px-3 rounded-xl border text-base sm:text-sm font-medium cursor-pointer transition-all has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-amber-400 ${
+                on
+                  ? 'border-amber-400 bg-gradient-to-br from-amber-400/25 to-rose-800/30 text-amber-100 shadow-[0_0_18px_rgba(243,196,48,0.25)]'
+                  : 'border-white/10 bg-neutral-900/70 text-gray-300 hover:border-amber-400/40 hover:text-gray-100'
+              }`}
+            >
+              <input type="radio" name={name} value={opt} checked={on} onChange={onChange} required className="sr-only" />
+              {Icon && <Icon className={`w-4 h-4 ${on ? 'text-amber-300' : 'text-emerald-400'}`} />}
+              <span>{opt}</span>
+            </label>
+          );
+        })}
+      </div>
+    </fieldset>
+  );
+}
+
 // The e-ticket card: live preview of the form, and the printed ticket once ticketId is known
 function TicketCard({ p, ticketId }) {
   return (
-    <div className="relative rounded-2xl overflow-hidden border border-amber-400/30 bg-gradient-to-b from-[#09152b] via-[#051a14] to-[#1a060d] p-4 sm:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-xl">
+    <div className="relative rounded-2xl overflow-hidden border border-amber-400/30 bg-gradient-to-b from-[#1a4d3e] via-[#0f2e25] to-[#5c1515] p-4 sm:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-xl">
       {/* Gold foil ribbon border top */}
-      <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500" />
+      <div className="absolute top-0 inset-x-0 h-1.5 palette-ribbon" />
 
       {/* Watermark Christmas Star */}
       <div className="absolute -right-12 -bottom-12 w-48 h-48 opacity-10 pointer-events-none">
@@ -67,8 +100,8 @@ function TicketCard({ p, ticketId }) {
           <h3 className="text-xl sm:text-2xl font-bold font-['Cinzel'] text-gold-gradient uppercase mt-0.5 tracking-wider">
             NATAL 2026
           </h3>
-          <p className="text-[11px] text-amber-100/70 italic font-['Cormorant_Garamond']">
-            &ldquo;Merayakan Kasih, Menyalakan Harapan&rdquo;
+          <p className="text-xs text-amber-100/80 italic font-['Cormorant_Garamond']">
+            &ldquo;{EVENT.theme}&rdquo; — {EVENT.verseRef}
           </p>
         </div>
         <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-amber-400/10 border border-amber-400/30 flex items-center justify-center shrink-0">
@@ -90,10 +123,10 @@ function TicketCard({ p, ticketId }) {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <span className="text-[10px] text-gray-400 uppercase tracking-wider block">
-              NPM
+              Jenis Kelamin
             </span>
-            <span className="font-mono text-amber-300 font-medium">
-              {p.npm.trim() || '— — — — — — — —'}
+            <span className="text-amber-300 font-medium">
+              {p.gender || '-'}
             </span>
           </div>
           <div>
@@ -143,6 +176,27 @@ function TicketCard({ p, ticketId }) {
             </span>
           </div>
         </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <span className="text-[10px] text-gray-400 uppercase tracking-wider block">
+              Keberangkatan
+            </span>
+            <span className="text-emerald-300 font-medium">{p.departure || '-'}</span>
+          </div>
+          <div>
+            <span className="text-[10px] text-gray-400 uppercase tracking-wider block">
+              Area Keberangkatan
+            </span>
+            <span className="text-gray-200">{p.departureArea || '-'}</span>
+          </div>
+        </div>
+        {/* The issued (printed) ticket carries the meeting-point address too */}
+        {ticketId && MEETING_POINTS[p.departureArea] && (
+          <p className="text-[10px] text-gray-300 leading-snug">
+            <span className="text-amber-300 font-semibold">Titik kumpul:</span> {MEETING_POINTS[p.departureArea]}
+          </p>
+        )}
 
         {/* Event Schedule Info */}
         <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1 mt-2">
@@ -204,14 +258,16 @@ function TicketCard({ p, ticketId }) {
 export default function RegistrationSection({ onBackToHero }) {
   const [formData, setFormData] = useState({
     fullName: '',
-    npm: '',
+    gender: '',
     email: '',
     whatsapp: '',
     region: 'depok',
     komselStatus: KOMSEL_OPTIONS[0],
     mentorName: '',
     faculty: '',
-    session: 'Sesi Utama (16.30 WIB - Selesai)',
+    session: 'Sesi Utama (17:00 - 21:00 WIB)',
+    departure: '',
+    departureArea: '-',
   });
 
   // The saved registration as the server returned it (null until submitted)
@@ -222,10 +278,9 @@ export default function RegistrationSection({ onBackToHero }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    if (name === 'npm') {
-      // NPM: Hanya angka, maksimal 8 digit
-      const numericOnly = value.replace(/\D/g, '').slice(0, 8);
-      setFormData((prev) => ({ ...prev, npm: numericOnly }));
+    if (name === 'departure') {
+      // Pribadi: area is always '-'; Bersama: the participant picks a meeting point
+      setFormData((prev) => ({ ...prev, departure: value, departureArea: value === 'Bersama' ? '' : '-' }));
       return;
     }
 
@@ -259,7 +314,7 @@ export default function RegistrationSection({ onBackToHero }) {
       // The server makes the ticket code and WhatsApp link; this throws if it did not save
       const result = await addRegistration({
         fullName: formData.fullName.trim(),
-        npm: formData.npm.trim(),
+        gender: formData.gender,
         email: formData.email.trim(),
         whatsapp: formData.whatsapp.trim(),
         region: formData.region,
@@ -267,6 +322,8 @@ export default function RegistrationSection({ onBackToHero }) {
         mentorName: isBelumPunya ? '-' : (formData.mentorName || '-'),
         faculty: formData.faculty || 'Gunadarma',
         session: formData.session,
+        departure: formData.departure,
+        departureArea: formData.departureArea,
       });
 
       setRegistered(result);
@@ -277,7 +334,7 @@ export default function RegistrationSection({ onBackToHero }) {
           particleCount: 110,
           spread: 80,
           origin: { y: 0.6 },
-          colors: ['#F5D061', '#E6B325', '#FFFFFF', '#38b000', '#E63946'],
+          colors: ['#7a1c1c', '#1a4d3e', '#4e8774', '#f3c430', '#fcfbf7'],
         });
       } catch (err) {
         console.error(err);
@@ -295,6 +352,7 @@ export default function RegistrationSection({ onBackToHero }) {
   };
 
   const isBelumPunya = formData.komselStatus.includes('Belum memiliki Komsel');
+  const isBersama = formData.departure === 'Bersama';
 
   return (
     <section
@@ -303,8 +361,8 @@ export default function RegistrationSection({ onBackToHero }) {
     >
       {/* Background Soft Lighting Accents */}
       <div className="absolute top-1/4 left-10 w-96 h-96 bg-amber-500/10 rounded-full blur-[100px] pointer-events-none -z-10" />
-      <div className="absolute bottom-20 right-10 w-96 h-96 bg-emerald-600/10 rounded-full blur-[100px] pointer-events-none -z-10" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl h-96 bg-rose-950/10 rounded-full blur-[120px] pointer-events-none -z-10" />
+      <div className="absolute bottom-20 right-10 w-96 h-96 bg-emerald-600/15 rounded-full blur-[100px] pointer-events-none -z-10" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl h-96 bg-rose-900/20 rounded-full blur-[120px] pointer-events-none -z-10" />
 
       {/* Section Header */}
       <div className="max-w-3xl mx-auto text-center mb-10 sm:mb-14">
@@ -344,6 +402,17 @@ export default function RegistrationSection({ onBackToHero }) {
         >
           Mari bersama-sama memuji, menyembah, dan menyambut sukacita kelahiran Sang Juru Selamat dalam persekutuan keluarga besar Universitas Gunadarma.
         </motion.p>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.3 }}
+          className="mt-5 inline-flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 px-4 py-2 rounded-2xl bg-emerald-950/40 border border-emerald-400/20 text-[11px] sm:text-xs text-gray-300"
+        >
+          <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-amber-300" />{EVENT.date}</span>
+          <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 text-amber-300" />{EVENT.time}</span>
+          <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-rose-300" />{EVENT.venue}</span>
+        </motion.div>
       </div>
 
       {/* Main Content Layout: Form + Live Digital Pass */}
@@ -356,7 +425,7 @@ export default function RegistrationSection({ onBackToHero }) {
           className="lg:col-span-7 glass-panel rounded-2xl p-4 sm:p-7 md:p-9 relative overflow-hidden"
         >
           {/* Subtle Top Gold Accent Bar */}
-          <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-amber-500/20 via-amber-400 to-amber-500/20" />
+          <div className="absolute top-0 inset-x-0 h-1 palette-ribbon" />
 
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
             {/* Field: Nama Lengkap */}
@@ -381,35 +450,15 @@ export default function RegistrationSection({ onBackToHero }) {
               </div>
             </div>
 
-            {/* Field: NPM & Region Kampus (2 Columns) */}
+            {/* Field: Jenis Kelamin & Region Kampus (2 Columns) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-              <div>
-                <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-                  <label htmlFor="reg-npm" className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase">
-                    NPM (Maks 8 Angka) <span className="text-rose-400">*</span>
-                  </label>
-                  <span className="text-[10px] font-mono text-gray-400">
-                    {formData.npm.length}/8 angka
-                  </span>
-                </div>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-                    <Hash className="w-4 h-4 text-amber-300/70" />
-                  </div>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    id="reg-npm"
-                    name="npm"
-                    required
-                    value={formData.npm}
-                    onChange={handleChange}
-                    placeholder="Contoh: 50421890"
-                    maxLength={8}
-                    className="w-full pl-10 pr-4 py-3 bg-neutral-900/70 border border-white/10 rounded-xl text-base sm:text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all font-mono tracking-wider"
-                  />
-                </div>
-              </div>
+              <ChoicePills
+                legend="Jenis Kelamin"
+                name="gender"
+                options={GENDERS}
+                value={formData.gender}
+                onChange={handleChange}
+              />
 
               <div>
                 <label htmlFor="reg-region" className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5 sm:mb-2">
@@ -523,11 +572,6 @@ export default function RegistrationSection({ onBackToHero }) {
                   <label htmlFor="reg-mentorName" className="block text-[11px] font-medium tracking-wider text-gray-300 uppercase">
                     Nama Kakak Komsel
                   </label>
-                  {isBelumPunya && (
-                    <span className="text-[10px] text-amber-300 font-medium bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/20">
-                      Otomatis diisi strip (-)
-                    </span>
-                  )}
                 </div>
                 <input
                   type="text"
@@ -564,6 +608,62 @@ export default function RegistrationSection({ onBackToHero }) {
                   placeholder="Contoh: Informatika / FTI"
                   className="w-full pl-10 pr-4 py-3 bg-neutral-900/70 border border-white/10 rounded-xl text-base sm:text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
                 />
+              </div>
+            </div>
+
+            {/* Field: Opsi Keberangkatan & Area */}
+            <div className="space-y-3 p-3.5 sm:p-4 rounded-xl bg-emerald-950/40 border border-emerald-400/25">
+              <ChoicePills
+                legend="Opsi Keberangkatan"
+                name="departure"
+                options={DEPARTURES}
+                value={formData.departure}
+                onChange={handleChange}
+                icons={{ Pribadi: Car, Bersama: Bus }}
+              />
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label htmlFor="reg-departureArea" className="block text-[11px] font-medium tracking-wider text-gray-300 uppercase">
+                    Area Keberangkatan
+                  </label>
+                </div>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <Navigation className="w-4 h-4 text-amber-300/70" />
+                  </div>
+                  <select
+                    id="reg-departureArea"
+                    name="departureArea"
+                    value={formData.departureArea}
+                    onChange={handleChange}
+                    disabled={!isBersama}
+                    required={isBersama}
+                    className={`w-full pl-10 pr-10 py-3 rounded-xl text-base sm:text-sm transition-all appearance-none ${
+                      isBersama
+                        ? 'bg-neutral-900/80 border border-white/10 text-gray-100 cursor-pointer focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400'
+                        : 'bg-neutral-800/60 border border-amber-400/30 text-amber-300 font-mono font-bold cursor-not-allowed'
+                    }`}
+                  >
+                    {isBersama ? (
+                      <>
+                        <option value="" disabled className="bg-neutral-900 text-gray-400">
+                          Pilih area titik kumpul
+                        </option>
+                        {Object.keys(MEETING_POINTS).map((area) => (
+                          <option key={area} value={area} className="bg-neutral-900 text-gray-100">
+                            {area}
+                          </option>
+                        ))}
+                      </>
+                    ) : (
+                      <option value="-">-</option>
+                    )}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-gray-400">
+                    <span className="text-xs">▼</span>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -670,7 +770,7 @@ export default function RegistrationSection({ onBackToHero }) {
               <p className="text-xs sm:text-sm text-gray-300 font-light mb-5">
                 Terima kasih, <strong className="text-white">{registered.fullName}</strong>.{' '}
                 {registered.alreadyRegistered
-                  ? 'NPM dan email ini sudah terdaftar sebelumnya, jadi ini tiket Anda yang lama.'
+                  ? 'Email ini sudah terdaftar sebelumnya, jadi ini tiket Anda yang lama.'
                   : 'Pendaftaran Anda sudah tersimpan.'}
               </p>
 
@@ -693,6 +793,30 @@ export default function RegistrationSection({ onBackToHero }) {
                 </span>
               </div>
 
+              {MEETING_POINTS[registered.departureArea] && (
+                <div className="relative overflow-hidden p-4 rounded-xl bg-gradient-to-br from-emerald-800/60 via-emerald-950/80 to-rose-900/50 border border-amber-400/40 text-left mb-5">
+                  <div className="absolute top-0 inset-x-0 h-1 palette-ribbon" />
+                  <div className="flex items-center gap-2 text-amber-300 font-bold text-xs tracking-[0.2em] uppercase mb-2">
+                    <Bus className="w-4 h-4" />
+                    <span>Titik Kumpul Keberangkatan</span>
+                  </div>
+                  <p className="text-lg font-['Cinzel'] font-bold text-white">{registered.departureArea}</p>
+                  <p className="text-xs text-gray-200 leading-relaxed mt-1">
+                    <span className="text-gray-400">Alamat:</span> {MEETING_POINTS[registered.departureArea]}
+                  </p>
+                  <a
+                    href={mapsUrl(MEETING_POINTS[registered.departureArea])}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-full text-[11px] font-semibold text-emerald-950 bg-emerald-300 hover:bg-emerald-200 transition-colors"
+                  >
+                    <MapPin className="w-3.5 h-3.5" />
+                    <span>Buka di Google Maps</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              )}
+
               {/* Pass Summary Details */}
               <div className="p-3.5 rounded-xl bg-black/60 border border-amber-400/20 text-left space-y-1.5 mb-5 text-xs">
                 <div className="flex items-center justify-between">
@@ -700,8 +824,8 @@ export default function RegistrationSection({ onBackToHero }) {
                   <span className="font-mono font-bold text-amber-300 text-sm">{registered.ticketId}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-400">NPM Mahasiswa:</span>
-                  <span className="font-mono text-white">{registered.npm}</span>
+                  <span className="text-gray-400">Jenis Kelamin:</span>
+                  <span className="text-white">{registered.gender}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400">Region Kampus:</span>
@@ -710,6 +834,13 @@ export default function RegistrationSection({ onBackToHero }) {
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400">Kakak Komsel:</span>
                   <span className="text-white">{registered.mentorName}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">Keberangkatan:</span>
+                  <span className="text-white">
+                    {registered.departure}
+                    {registered.departureArea !== '-' && ` (${registered.departureArea})`}
+                  </span>
                 </div>
                 <div className="pt-1.5 mt-1.5 border-t border-white/10 text-center text-gray-300">
                   {EVENT.date} • {EVENT.time} • {EVENT.venue}

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Calendar, MapPin } from 'lucide-react';
+import { Sparkles, Calendar, Clock, MapPin } from 'lucide-react';
 import ChristmasStar from './ChristmasStar';
 import TreeSilhouette from './TreeSilhouette';
 import { EVENT } from '../utils/event';
@@ -62,9 +62,7 @@ export default function HeroSection({ onStartRegistration }) {
           className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full mb-3 text-[11px] sm:text-xs tracking-[0.25em] uppercase font-medium text-amber-200/90 border border-amber-400/25 bg-amber-950/20 backdrop-blur-sm shadow-[0_0_15px_rgba(234,179,8,0.15)] transform-gpu"
           style={{ willChange: 'transform, opacity' }}
         >
-          <Sparkles className="w-3 h-3 text-amber-300 animate-spin" style={{ animationDuration: '6s' }} />
           <span>Ibadah & Perayaan Natal 2026</span>
-          <Sparkles className="w-3 h-3 text-amber-300 animate-spin" style={{ animationDuration: '6s' }} />
         </motion.div>
 
         {/* 3. "NATAL" - Largest text with GPU-accelerated smooth scale + opacity */}
@@ -140,7 +138,7 @@ export default function HeroSection({ onStartRegistration }) {
           UNIVERSITAS GUNADARMA
         </motion.p>
 
-        {/* 6. TAGLINE: "Merayakan Kasih, Menyalakan Harapan" */}
+        {/* 6. TEMA NATAL */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -151,11 +149,11 @@ export default function HeroSection({ onStartRegistration }) {
           }}
           className="mt-5 sm:mt-7 max-w-xl mx-auto px-4"
         >
-          <p className="text-sm sm:text-base md:text-lg lg:text-xl font-['Cormorant_Garamond'] italic font-normal tracking-wide text-amber-200/90 leading-relaxed">
-            &ldquo;Merayakan Kasih, Menyalakan Harapan&rdquo;
+          <p className="text-2xl sm:text-3xl md:text-4xl font-['Cormorant_Garamond'] italic font-semibold tracking-wide text-gold-gradient text-gold-glow leading-tight">
+            &ldquo;{EVENT.theme}&rdquo;
           </p>
-          <p className="text-[10px] sm:text-xs text-gray-400 font-light mt-1 tracking-normal sm:tracking-wider">
-            &ldquo;Terang itu bercahaya di dalam kegelapan dan kegelapan itu tidak menguasainya.&rdquo; — Yohanes 1:5
+          <p className="text-[11px] sm:text-xs text-gray-300/90 font-light mt-2 leading-relaxed">
+            &ldquo;{EVENT.verse}&rdquo; — <span className="text-rose-300 font-medium">{EVENT.verseRef}</span>
           </p>
         </motion.div>
 
@@ -191,6 +189,11 @@ export default function HeroSection({ onStartRegistration }) {
           <div className="flex items-center gap-1.5">
             <Calendar className="w-3.5 h-3.5 text-amber-300/80 shrink-0" />
             <span>{EVENT.date}</span>
+          </div>
+          <div className="hidden sm:inline w-1 h-1 rounded-full bg-amber-400/40" />
+          <div className="flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5 text-amber-300/80 shrink-0" />
+            <span>{EVENT.time}</span>
           </div>
           <div className="hidden sm:inline w-1 h-1 rounded-full bg-amber-400/40" />
           <div className="flex items-center gap-1.5">

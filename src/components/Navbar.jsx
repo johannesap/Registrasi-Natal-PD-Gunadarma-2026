@@ -1,5 +1,4 @@
 import React from 'react';
-import { Sparkles } from 'lucide-react';
 import YouTubeAudio from './YouTubeAudio';
 
 export default function Navbar({ onNavigate }) {
@@ -12,10 +11,6 @@ export default function Navbar({ onNavigate }) {
           type="button"
           className="flex items-center gap-2 sm:gap-3 glass-panel-subtle px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full border border-amber-400/20 backdrop-blur-md cursor-pointer hover:border-amber-400/40 transition-all text-left shrink-0"
         >
-          {/* Gold Cross / Star Emblem */}
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-amber-300 via-amber-500 to-amber-700 flex items-center justify-center shadow-[0_0_15px_rgba(245,208,97,0.4)] shrink-0">
-            <Sparkles className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-neutral-950" />
-          </div>
           <div>
             <div className="flex items-center gap-1 sm:gap-1.5">
               <span className="font-['Cinzel'] font-bold text-xs sm:text-sm text-gold-gradient tracking-wider whitespace-nowrap">

@@ -3,7 +3,7 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import QRCode from 'qrcode';
 import { regionName } from '../../src/utils/regions.js';
-import { EVENT } from '../../src/utils/event.js';
+import { EVENT, GENDERS, DEPARTURES, MEETING_POINTS } from '../../src/utils/event.js';
 import { intlPhone } from '../../src/utils/phone.js';
 import {
   listRegistrations,
@@ -121,23 +121,27 @@ function whatsappLink(r, siteUrl) {
 
   const text =
     `✨ *TIKET RESMI — NATAL PERSEKUTUAN DOA UNIVERSITAS GUNADARMA 2026* ✨\n` +
-    `_"Merayakan Kasih, Menyalakan Harapan"_\n\n` +
+    `_"${EVENT.theme}" — ${EVENT.verseRef}_\n\n` +
     `Shalom, *${r.fullName}*!\n` +
     `Pendaftaran Ibadah & Perayaan Natal Anda telah *BERHASIL TERKONFIRMASI*.\n\n` +
     `📌 *DETAIL E-TICKET ANDA:*\n` +
     `• Kode Tiket: *${r.ticketId}*\n` +
-    `• NPM: *${r.npm}*\n` +
+    `• Jenis Kelamin: *${r.gender}*\n` +
     `• Email: *${r.email}*\n` +
     `• Region Kampus: *${regionName(r.region)}*\n` +
     `• Kakak Komsel: *${r.mentorName}*\n` +
-    `• Jurusan: *${r.faculty}*\n\n` +
+    `• Jurusan: *${r.faculty}*\n` +
+    `• Keberangkatan: *${r.departure}${r.departureArea !== '-' ? ` (${r.departureArea})` : ''}*\n\n` +
+    (MEETING_POINTS[r.departureArea]
+      ? `🚌 *TITIK KUMPUL KEBERANGKATAN ${r.departureArea.toUpperCase()}:*\n${MEETING_POINTS[r.departureArea]}\n\n`
+      : '') +
     `🔳 *QR CHECK-IN* (buka & tunjukkan di pintu masuk):\n` +
     `${siteUrl}/api/tickets/${encodeURIComponent(r.ticketId)}/qr.png\n\n` +
     `🗓️ *WAKTU & TEMPAT:*\n` +
     `• Tanggal: ${EVENT.date}\n` +
     `• Pukul: ${EVENT.time}\n` +
     `• Lokasi: ${EVENT.venue}\n\n` +
-    `_Simpan pesan ini dan tunjukkan QR check-in di atas saat registrasi ulang di pintu masuk auditorium._\n\n` +
+    `_Simpan pesan ini dan tunjukkan QR check-in di atas saat registrasi ulang di pintu masuk._\n\n` +
     `Sampai berjumpa dalam sukacita Natal! Tuhan Yesus memberkati. 🙏✨`;
 
   return `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`;
@@ -147,13 +151,16 @@ function whatsappLink(r, siteUrl) {
 router.post('/register', async (req, res) => {
   const body = req.body || {};
   const fullName = str(body.fullName);
-  const npm = str(body.npm);
+  const gender = str(body.gender);
+  const departure = str(body.departure);
+  // Only "Bersama" picks a meeting point; "Pribadi" is always '-'
+  const departureArea = departure === 'Bersama' ? str(body.departureArea) : '-';
   const email = str(body.email);
   const whatsapp = str(body.whatsapp).replace(/\D/g, '');
   const region = (str(body.region) || 'depok').toLowerCase();
   const komselStatus = str(body.komselStatus) || 'Sudah memiliki Komsel';
   const faculty = str(body.faculty) || 'Universitas Gunadarma';
-  const session = str(body.session) || 'Sesi Utama (16.30 WIB - Selesai)';
+  const session = str(body.session) || 'Sesi Utama (17:00 - 21:00 WIB)';
 
   const fail = (message) => res.status(422).json({ success: false, message });
 
@@ -163,8 +170,9 @@ router.post('/register', async (req, res) => {
 
   // Validation rules
   if (!fullName) return fail('Nama lengkap wajib diisi.');
-  if (!npm) return fail('NPM wajib diisi.');
-  if (!/^\d{1,8}$/.test(npm)) return fail('NPM harus berupa angka dan maksimal 8 digit.');
+  if (!GENDERS.includes(gender)) return fail('Pilih jenis kelamin.');
+  if (!DEPARTURES.includes(departure)) return fail('Pilih opsi keberangkatan (Pribadi / Bersama).');
+  if (departure === 'Bersama' && !MEETING_POINTS[departureArea]) return fail('Pilih area keberangkatan.');
   if (!email) return fail('Email wajib diisi.');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return fail('Format email tidak valid. Contoh: nama@gmail.com');
@@ -178,14 +186,14 @@ router.post('/register', async (req, res) => {
   if (textFields.some((v) => v.length > 150)) return fail('Isian terlalu panjang (maksimal 150 karakter).');
 
   // ponytail: check-then-insert; two submits in the same instant can still both insert. Fine with the
-  // submit button disabled while sending; add a unique {npm, email} index if duplicates still show up.
-  const existing = await findExistingRegistration(npm, email);
+  // submit button disabled while sending; add a unique email index if duplicates still show up.
+  const existing = await findExistingRegistration(email);
   if (existing) {
-    // NPM and email are not secret: only hand back the ticket (and phone number) to someone who also knows the phone
+    // An email is not secret: only hand back the ticket (and phone number) to someone who also knows the phone
     if (intlPhone(existing.whatsapp) !== intlPhone(whatsapp)) {
       return res.status(409).json({
         success: false,
-        message: 'NPM dan email ini sudah terdaftar dengan nomor WhatsApp lain. Hubungi panitia.',
+        message: 'Email ini sudah terdaftar dengan nomor WhatsApp lain. Hubungi panitia.',
       });
     }
     return res.json({
@@ -203,13 +211,12 @@ router.post('/register', async (req, res) => {
 
   // Ticket code; the unique index rejects the rare collision, and the user simply submits again
   const randomSuffix = crypto.randomInt(1000, 10000);
-  const npmSuffix = npm.length >= 4 ? npm.slice(-4) : '2026';
-  const ticketId = `NATAL-UG-${randomSuffix}-${npmSuffix}`;
+  const ticketId = `NATAL-UG-${randomSuffix}-${whatsapp.slice(-4)}`;
 
   const record = await addRegistration({
     ticketId,
     fullName,
-    npm,
+    gender,
     email,
     whatsapp,
     region,
@@ -217,6 +224,8 @@ router.post('/register', async (req, res) => {
     mentorName,
     faculty,
     session,
+    departure,
+    departureArea,
   });
 
   console.log(`[Registration] New participant registered: ${ticketId}`);

@@ -185,7 +185,7 @@ export default function AdminPortal({ onBackToHome }) {
       const matchSearch =
         !q ||
         item.fullName?.toLowerCase().includes(q) ||
-        item.npm?.toLowerCase().includes(q) ||
+        item.departureArea?.toLowerCase().includes(q) ||
         item.email?.toLowerCase().includes(q) ||
         item.whatsapp?.toLowerCase().includes(q) ||
         item.ticketId?.toLowerCase().includes(q) ||
@@ -544,7 +544,7 @@ export default function AdminPortal({ onBackToHome }) {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 aria-label="Cari peserta"
-                placeholder="Cari Nama, NPM, Email, WA..."
+                placeholder="Cari Nama, Email, WA, Area..."
                 className="w-full pl-10 pr-4 py-2.5 bg-neutral-900/80 border border-white/10 rounded-xl text-xs sm:text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
               />
             </div>
@@ -670,7 +670,7 @@ export default function AdminPortal({ onBackToHome }) {
                     {/* On phones only name, check-in and actions show, so the check-in button fits on screen */}
                     <th className="hidden md:table-cell py-3.5 px-4 font-semibold">No</th>
                     <th className="hidden md:table-cell py-3.5 px-4 font-semibold">Kode Tiket</th>
-                    <th className="py-3.5 px-4 font-semibold">Nama & NPM</th>
+                    <th className="py-3.5 px-4 font-semibold">Nama & Keberangkatan</th>
                     <th className="hidden md:table-cell py-3.5 px-4 font-semibold">Kontak</th>
                     <th className="hidden md:table-cell py-3.5 px-4 font-semibold">Region & Jurusan</th>
                     <th className="hidden md:table-cell py-3.5 px-4 font-semibold">Kakak Komsel</th>
@@ -690,7 +690,10 @@ export default function AdminPortal({ onBackToHome }) {
                       </td>
                       <td className="py-3.5 px-4">
                         <div className="font-semibold text-white">{row.fullName}</div>
-                        <div className="text-[11px] font-mono text-gray-400">{row.npm}</div>
+                        <div className="text-[11px] text-gray-400">
+                          {row.gender} • {row.departure}
+                          {row.departureArea !== '-' && ` (${row.departureArea})`}
+                        </div>
                         <div className="md:hidden text-[11px] font-mono text-amber-300">{row.ticketId}</div>
                       </td>
                       <td className="hidden md:table-cell py-3.5 px-4 space-y-0.5">
@@ -825,7 +828,7 @@ export default function AdminPortal({ onBackToHome }) {
               </div>
 
               {/* Pass Card Preview */}
-              <div className="rounded-xl p-4 bg-gradient-to-b from-[#09152b] via-[#051a14] to-[#1a060d] border border-amber-400/30 space-y-3 text-xs mb-5">
+              <div className="rounded-xl p-4 bg-gradient-to-b from-[#1a4d3e] via-[#0f2e25] to-[#5c1515] border border-amber-400/30 space-y-3 text-xs mb-5">
                 <div className="flex items-center justify-between border-b border-white/10 pb-2">
                   <span className="font-bold text-amber-300 font-['Cinzel']">NATAL PD UG 2026</span>
                   <span className="font-mono text-emerald-400 text-[11px] font-semibold">
@@ -848,8 +851,8 @@ export default function AdminPortal({ onBackToHome }) {
                     </span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-gray-400 uppercase block">NPM</span>
-                    <span className="font-mono text-white">{selectedParticipant.npm}</span>
+                    <span className="text-[10px] text-gray-400 uppercase block">Jenis Kelamin</span>
+                    <span className="text-white">{selectedParticipant.gender}</span>
                   </div>
                 </div>
 
@@ -875,9 +878,18 @@ export default function AdminPortal({ onBackToHome }) {
                   </div>
                 </div>
 
-                <div>
-                  <span className="text-[10px] text-gray-400 uppercase block">Jurusan/Fakultas</span>
-                  <span className="text-white">{selectedParticipant.faculty || '-'}</span>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <span className="text-[10px] text-gray-400 uppercase block">Jurusan/Fakultas</span>
+                    <span className="text-white">{selectedParticipant.faculty || '-'}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-gray-400 uppercase block">Keberangkatan</span>
+                    <span className="text-white">
+                      {selectedParticipant.departure}
+                      {selectedParticipant.departureArea !== '-' && ` (${selectedParticipant.departureArea})`}
+                    </span>
+                  </div>
                 </div>
               </div>
 

@@ -15,11 +15,13 @@ const { default: bcrypt } = await import('bcryptjs');
 
 const person = {
   fullName: 'Tes Otomatis',
-  npm: '19990001',
+  gender: 'Perempuan',
   email: 'Tes.Otomatis@Example.com',
   whatsapp: '081299990001',
   region: 'depok',
   komselStatus: 'Sudah memiliki Komsel (Tuliskan nama Kakak Komsel di bawah)',
+  departure: 'Bersama',
+  departureArea: 'Depok',
 };
 
 let server;
@@ -79,10 +81,12 @@ const authed = (path, token, method = 'GET', body) =>
     body: body && JSON.stringify(body),
   });
 
-test('registering again with the same NPM, email and phone returns the same ticket', { skip }, async () => {
+test('registering again with the same email and phone returns the same ticket', { skip }, async () => {
   const first = await (await register(person)).json();
   assert.equal(first.success, true);
   ticketId = first.data.ticketId;
+  assert.match(ticketId, /^NATAL-UG-\d{4}-0001$/, 'suffix is the last 4 digits of the phone');
+  assert.equal(first.data.departureArea, 'Depok');
 
   // Email in other letter case and phone written as 62…: still the same person
   const again = await (
@@ -92,12 +96,27 @@ test('registering again with the same NPM, email and phone returns the same tick
   assert.equal(again.data.ticketId, ticketId);
 });
 
-test('same NPM and email with another phone gets no ticket back', { skip }, async () => {
+test('same email with another phone gets no ticket back', { skip }, async () => {
   const res = await register({ ...person, whatsapp: '081200000000' });
   assert.equal(res.status, 409);
   const body = await res.json();
   assert.equal(body.data, undefined);
   assert.equal(body.dispatch, undefined);
+});
+
+test('Pribadi always stores area "-"; Bersama needs a known area', { skip }, async () => {
+  const pribadi = await register({ ...person, email: 'pribadi@example.com', departure: 'Pribadi', departureArea: 'Depok' });
+  const body = await pribadi.json();
+  await deleteRegistration(body.data.ticketId);
+  assert.equal(body.data.departureArea, '-');
+
+  for (const bad of [
+    { departure: 'Bersama', departureArea: 'Bogor' },
+    { departure: 'Naik ojek' },
+    { gender: 'X' },
+  ]) {
+    assert.equal((await register({ ...person, email: 'salah@example.com', ...bad })).status, 422, JSON.stringify(bad));
+  }
 });
 
 test('checking in twice keeps the first check-in time', { skip }, async () => {

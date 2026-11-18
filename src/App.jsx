@@ -52,18 +52,19 @@ export default function App() {
   };
 
   return (
-    <div className="relative min-h-screen w-full bg-[#02040a] text-gray-100 overflow-x-hidden selection:bg-amber-400/25 selection:text-amber-200 flex flex-col justify-between">
+    <div className="relative min-h-screen w-full text-gray-100 overflow-x-hidden selection:bg-amber-400/25 selection:text-amber-200 flex flex-col justify-between">
       {/* 1. CINEMATIC HIGH-PERFORMANCE BACKGROUND (GPU Optimized) */}
       <div className="fixed inset-0 pointer-events-none -z-30 overflow-hidden">
         {/* Unified multi-stop night sky gradient - 0% blur overhead, 100% GPU accelerated */}
         <div
           className="absolute inset-0"
           style={{
+            // First layer paints on top: the palette glows go above the opaque pine base
             background:
-              'radial-gradient(ellipse at 50% 12%, rgba(12, 35, 64, 0.75) 0%, rgba(3, 13, 29, 0.85) 45%, #02040a 100%), ' +
-              'radial-gradient(circle at 15% 40%, rgba(6, 61, 46, 0.35) 0%, transparent 50%), ' +
-              'radial-gradient(circle at 85% 55%, rgba(56, 8, 22, 0.3) 0%, transparent 50%), ' +
-              'radial-gradient(circle at 50% 28%, rgba(245, 208, 97, 0.12) 0%, transparent 60%)',
+              'radial-gradient(circle at 12% 45%, rgba(78, 135, 116, 0.22) 0%, transparent 45%), ' +
+              'radial-gradient(circle at 88% 65%, rgba(122, 28, 28, 0.32) 0%, transparent 45%), ' +
+              'radial-gradient(circle at 50% 28%, rgba(243, 196, 48, 0.1) 0%, transparent 60%), ' +
+              'radial-gradient(ellipse at 50% 12%, #1a4d3e 0%, #0b241d 50%, #06140f 100%)',
           }}
         />
 
@@ -71,7 +72,7 @@ export default function App() {
         <div
           className="hidden md:block absolute top-24 left-1/2 -translate-x-1/2 w-[550px] h-[380px] rounded-full opacity-25 pointer-events-none blur-3xl transform-gpu"
           style={{
-            background: 'radial-gradient(circle, rgba(254, 243, 199, 0.3) 0%, rgba(245, 208, 97, 0.15) 40%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(252, 251, 247, 0.28) 0%, rgba(243, 196, 48, 0.16) 40%, transparent 70%)',
           }}
         />
 

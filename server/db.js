@@ -55,7 +55,8 @@ export function toFrontend(doc) {
   return {
     ticketId: doc.ticket_id,
     fullName: doc.full_name,
-    npm: doc.npm,
+    // Registrations from before the gender field (they have an NPM instead) show '-'
+    gender: doc.gender || '-',
     email: doc.email,
     whatsapp: doc.whatsapp,
     region: doc.region,
@@ -63,6 +64,8 @@ export function toFrontend(doc) {
     mentorName: doc.mentor_name || '-',
     faculty: doc.faculty || 'Universitas Gunadarma',
     session: doc.session || 'Sesi Utama (16.30 WIB - Selesai)',
+    departure: doc.departure || '-',
+    departureArea: doc.departure_area || '-',
     isCheckedIn: Boolean(doc.is_checked_in),
     checkedInAt: doc.checked_in_at ? formatCheckedIn(doc.checked_in_at) : null,
     registeredAt: doc.registered_at || (doc.created_at ? formatRegistered(doc.created_at) : null),
@@ -74,9 +77,9 @@ export async function listRegistrations() {
   return docs.map(toFrontend);
 }
 
-// Same NPM + email means the same person submitting again (guests type any NPM, so NPM alone is not enough)
-export async function findExistingRegistration(npm, email) {
-  const doc = await (await registrations()).findOne({ npm, email: exactIgnoreCase(email) });
+// Same email means the same person submitting again
+export async function findExistingRegistration(email) {
+  const doc = await (await registrations()).findOne({ email: exactIgnoreCase(email) });
   return doc ? toFrontend(doc) : null;
 }
 
@@ -85,14 +88,16 @@ export async function addRegistration(reg) {
   const doc = {
     ticket_id: reg.ticketId,
     full_name: reg.fullName,
-    npm: reg.npm,
+    gender: reg.gender,
     email: reg.email,
     whatsapp: reg.whatsapp,
     region: reg.region,
     komsel_status: reg.komselStatus,
     mentor_name: reg.mentorName || '-',
     faculty: reg.faculty || 'Universitas Gunadarma',
-    session: reg.session || 'Sesi Utama (16.30 WIB - Selesai)',
+    session: reg.session,
+    departure: reg.departure,
+    departure_area: reg.departureArea,
     registered_at: formatRegistered(now),
     is_checked_in: false,
     checked_in_at: null,

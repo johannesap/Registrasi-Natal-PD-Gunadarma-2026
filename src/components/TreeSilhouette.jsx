@@ -10,24 +10,24 @@ export default function TreeSilhouette() {
       className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-80 sm:h-96 pointer-events-none select-none -z-10 flex items-end justify-center overflow-hidden"
     >
       {/* Ambient Forest Mist & Emerald Glow */}
-      <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-[#02040a] via-[#021811]/30 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-[#06140f] via-[#1a4d3e]/30 to-transparent" />
       <div className="absolute bottom-4 w-96 h-40 bg-emerald-900/15 rounded-full blur-3xl" />
 
       {/* Minimalist Sacred Christmas Tree Outline in Fine Gold & Emerald Glow */}
       <svg
         viewBox="0 0 400 350"
-        className="w-full max-w-lg h-auto opacity-35 filter drop-shadow-[0_0_15px_rgba(234,179,8,0.25)]"
+        className="w-full max-w-lg h-auto opacity-35 filter drop-shadow-[0_0_15px_rgba(243,196,48,0.25)]"
       >
         <defs>
           <linearGradient id="treeGoldStroke" x1="50%" y1="0%" x2="50%" y2="100%">
-            <stop offset="0%" stopColor="#fde047" stopOpacity="0.8" />
-            <stop offset="40%" stopColor="#ca8a04" stopOpacity="0.5" />
-            <stop offset="100%" stopColor="#052e24" stopOpacity="0.1" />
+            <stop offset="0%" stopColor="#f7d660" stopOpacity="0.8" />
+            <stop offset="40%" stopColor="#f3c430" stopOpacity="0.5" />
+            <stop offset="100%" stopColor="#1a4d3e" stopOpacity="0.1" />
           </linearGradient>
           <linearGradient id="treeFillGrad" x1="50%" y1="0%" x2="50%" y2="100%">
-            <stop offset="0%" stopColor="#fef08a" stopOpacity="0.04" />
-            <stop offset="50%" stopColor="#064e3b" stopOpacity="0.1" />
-            <stop offset="100%" stopColor="#020617" stopOpacity="0" />
+            <stop offset="0%" stopColor="#fae594" stopOpacity="0.04" />
+            <stop offset="50%" stopColor="#4e8774" stopOpacity="0.1" />
+            <stop offset="100%" stopColor="#06140f" stopOpacity="0" />
           </linearGradient>
         </defs>
 

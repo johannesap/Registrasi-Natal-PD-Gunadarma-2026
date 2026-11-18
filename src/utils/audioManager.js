@@ -1,7 +1,7 @@
 // Centralized Audio Manager for Natal PD Gunadarma 2026
 // Handles HTML5 Audio playback, autoplay detection, synchronization, and fallbacks
 
-const AUDIO_SRC_MP3 = '/audio/jingle-bells.mp3';
+const AUDIO_SRC_MP3 = '/audio/jesus-it-is-you.mp3';
 
 class ChristmasAudioManager {
   constructor() {

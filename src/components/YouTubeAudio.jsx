@@ -26,7 +26,7 @@ export default function YouTubeAudio() {
           ? 'bg-gradient-to-r from-amber-500/30 via-red-500/20 to-amber-600/30 border-amber-400 text-amber-200 shadow-[0_0_20px_rgba(245,208,97,0.45)]'
           : 'bg-white/10 hover:bg-white/15 border-amber-400/30 text-amber-100 hover:border-amber-400/60 shadow-[0_0_12px_rgba(245,208,97,0.15)] animate-pulse'
       }`}
-      title={isPlaying ? 'Jeda Musik Natal (Jingle Bells)' : 'Putar Musik Natal (Jingle Bells)'}
+      title={isPlaying ? 'Jeda Musik Natal (Jesus It Is You)' : 'Putar Musik Natal (Jesus It Is You)'}
       aria-label={isPlaying ? 'Jeda Musik Natal' : 'Putar Musik Natal'}
     >
       {isPlaying ? (
@@ -37,7 +37,7 @@ export default function YouTubeAudio() {
             <span className="w-0.5 bg-amber-200 rounded-full animate-[bounce_1.0s_infinite_0.2s] h-2/3" />
             <span className="w-0.5 bg-amber-400 rounded-full animate-[bounce_0.8s_infinite_0.4s] h-4/5" />
           </div>
-          <span className="font-bold text-amber-200 text-xs hidden sm:inline">Jingle Bells</span>
+          <span className="font-bold text-amber-200 text-xs hidden sm:inline">Jesus It Is You</span>
         </>
       ) : (
         <>
