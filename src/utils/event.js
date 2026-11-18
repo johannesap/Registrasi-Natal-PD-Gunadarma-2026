@@ -12,6 +12,14 @@ export const EVENT = {
 
 export const GENDERS = ['Laki-laki', 'Perempuan'];
 
+// The full text is what gets stored; the form shows it without the part in brackets
+export const KOMSEL_OPTIONS = [
+  'Sudah memiliki Komsel (Tuliskan nama Kakak Komsel di bawah)',
+  'Belum memiliki Komsel (Rindu bergabung dengan Komsel PD)',
+  'Alumni / Pengurus',
+  'Tamu / Undangan Khusus',
+];
+
 // "Bersama" departs from one of these meeting points; "Pribadi" travels on their own (area '-')
 export const DEPARTURES = ['Pribadi', 'Bersama'];
 export const MEETING_POINTS = {

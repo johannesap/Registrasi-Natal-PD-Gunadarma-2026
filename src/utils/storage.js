@@ -1,4 +1,4 @@
-import { regionName } from './regions';
+import { regionName } from './regions.js';
 
 const AUTH_TOKEN_KEY = 'natal_pd_admin_token_2026';
 
@@ -122,7 +122,7 @@ export const logoutAdmin = () => {
 };
 
 // One quoted CSV cell; a leading = + - @ gets a ' so Excel shows it as text instead of running a formula
-const csvCell = (value) =>
+export const csvCell = (value) =>
   `"${String(value ?? '')
     .replace(/^[=+\-@\t\r]/, "'$&")
     .replace(/"/g, '""')}"`;

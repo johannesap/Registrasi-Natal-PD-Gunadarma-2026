@@ -13,16 +13,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   </head>
   <body class="bg-[#06140f] text-gray-100 selection:bg-amber-500/30 selection:text-amber-200 antialiased overflow-x-hidden">
+    <!-- Background music; src/utils/audioManager.js plays it (or waits for the first tap when autoplay is blocked) -->
     <audio id="bg-music" src="/audio/jesus-it-is-you.mp3" preload="auto" loop playsinline autoplay style="position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;bottom:0;left:0"></audio>
-    <script>
-      (function() {
-        var a = document.getElementById('bg-music');
-        if (a) {
-          var p = a.play();
-          if (p && p.catch) p.catch(function() {});
-        }
-      })();
-    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

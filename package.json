@@ -5,13 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "server": "node server/index.js",
     "build": "vite build",
     "lint": "oxlint",
-    "test": "node --test server/auth.test.js server/db.test.js",
+    "test": "node --test server/auth.test.js server/db.test.js src/utils/storage.test.js",
     "set-admin": "node server/set-admin.js",
-    "preview": "vite preview",
-    "laravel": "cd backend && php artisan serve --port=8000"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, lazy, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "./components/Navbar";
 import ChristmasNightCanvas from "./components/ChristmasNightCanvas";
 import HeroSection from "./components/HeroSection";
 import RegistrationSection from "./components/RegistrationSection";
-import AdminPortal from "./components/AdminPortal";
 import Footer from "./components/Footer";
 import audioManager from "./utils/audioManager";
+
+// Panitia screens and the QR scanner load only when the portal is opened, not for every visitor
+const AdminPortal = lazy(() => import("./components/AdminPortal"));
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState(() => {
@@ -127,7 +129,9 @@ export default function App() {
               className="w-full pt-16 transform-gpu"
               style={{ willChange: "transform, opacity" }}
             >
-              <AdminPortal onBackToHome={() => navigateTo("hero")} />
+              <Suspense fallback={null}>
+                <AdminPortal onBackToHome={() => navigateTo("hero")} />
+              </Suspense>
             </motion.div>
           )}
         </AnimatePresence>

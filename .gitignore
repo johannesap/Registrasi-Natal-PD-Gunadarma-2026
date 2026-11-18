@@ -28,3 +28,6 @@ dist-ssr
 
 # Local registration data
 server/data/registrations.json
+
+# Old Laravel backend, removed from the repo; a local copy may still hold its .env with the Atlas password
+backend/

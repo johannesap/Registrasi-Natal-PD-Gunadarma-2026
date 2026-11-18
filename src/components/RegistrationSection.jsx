@@ -28,14 +28,7 @@ import {
 import confetti from 'canvas-confetti';
 import { addRegistration } from '../utils/storage';
 import { REGIONS, regionName as getRegionName } from '../utils/regions';
-import { EVENT, GENDERS, DEPARTURES, MEETING_POINTS, mapsUrl } from '../utils/event';
-
-const KOMSEL_OPTIONS = [
-  'Sudah memiliki Komsel (Tuliskan nama Kakak Komsel di bawah)',
-  'Belum memiliki Komsel (Rindu bergabung dengan Komsel PD)',
-  'Alumni / Pengurus',
-  'Tamu / Undangan Khusus',
-];
+import { EVENT, GENDERS, DEPARTURES, MEETING_POINTS, KOMSEL_OPTIONS, mapsUrl } from '../utils/event';
 
 // Check-in QR holding the ticket code; panitia scan it with "Scan QR" on the sekretariat page
 function TicketQR({ ticketId, className }) {
@@ -265,7 +258,6 @@ export default function RegistrationSection({ onBackToHero }) {
     komselStatus: KOMSEL_OPTIONS[0],
     mentorName: '',
     faculty: '',
-    session: 'Sesi Utama (17:00 - 21:00 WIB)',
     departure: '',
     departureArea: '-',
   });
@@ -321,7 +313,6 @@ export default function RegistrationSection({ onBackToHero }) {
         komselStatus: formData.komselStatus,
         mentorName: isBelumPunya ? '-' : (formData.mentorName || '-'),
         faculty: formData.faculty || 'Gunadarma',
-        session: formData.session,
         departure: formData.departure,
         departureArea: formData.departureArea,
       });

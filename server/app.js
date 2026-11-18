@@ -1,7 +1,7 @@
 import express from 'express';
 import apiRouter from './routes/api.js';
 
-// Shared by Vercel (api/index.js), the local server (index.js) and the tests
+// Shared by Vercel (api/index.js), the Vite dev server (vite.config.js) and the tests
 const app = express();
 
 app.use(express.json());

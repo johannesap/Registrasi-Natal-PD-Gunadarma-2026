@@ -10,6 +10,8 @@ async function connect() {
   const db = client.db(process.env.MONGODB_DATABASE || 'natal_pd_2026');
   // No-op when it exists; keeps a fresh database (e.g. dev) from accepting duplicate ticket codes
   await db.collection('registrations').createIndex({ ticket_id: 1 }, { unique: true });
+  // Attempt counters (login, register) delete themselves once their window is over
+  await db.collection('limits').createIndex({ expires_at: 1 }, { expireAfterSeconds: 0 });
   return db;
 }
 
@@ -63,7 +65,6 @@ export function toFrontend(doc) {
     komselStatus: doc.komsel_status,
     mentorName: doc.mentor_name || '-',
     faculty: doc.faculty || 'Universitas Gunadarma',
-    session: doc.session || 'Sesi Utama (16.30 WIB - Selesai)',
     departure: doc.departure || '-',
     departureArea: doc.departure_area || '-',
     isCheckedIn: Boolean(doc.is_checked_in),
@@ -95,7 +96,6 @@ export async function addRegistration(reg) {
     komsel_status: reg.komselStatus,
     mentor_name: reg.mentorName || '-',
     faculty: reg.faculty || 'Universitas Gunadarma',
-    session: reg.session,
     departure: reg.departure,
     departure_area: reg.departureArea,
     registered_at: formatRegistered(now),
@@ -202,6 +202,40 @@ export async function upsertAdminUser({ name, email, role, passwordHash }) {
     },
     { upsert: true }
   );
+}
+
+// Attempt counters shared by every serverless instance: { _id: key, n, expires_at }
+const limits = async () => (await getDb()).collection('limits');
+
+// Counts one attempt for key and returns the count. A window starts at the first attempt; the attempt
+// that reaches max starts a fresh full window, so whoever hits the limit waits the whole windowMs.
+export async function countAttempt(key, max, windowMs) {
+  const now = Date.now();
+  const live = { $gt: ['$expires_at', new Date(now)] }; // the TTL sweep runs once a minute, so check expiry here too
+  const doc = await (await limits()).findOneAndUpdate(
+    { _id: key },
+    [
+      {
+        $set: {
+          n: { $cond: [live, { $add: ['$n', 1] }, 1] },
+          expires_at: { $cond: [live, '$expires_at', new Date(now + windowMs)] },
+        },
+      },
+      { $set: { expires_at: { $cond: [{ $eq: ['$n', max] }, new Date(now + windowMs), '$expires_at'] } } },
+    ],
+    { upsert: true, returnDocument: 'after' }
+  );
+  return doc.n;
+}
+
+// Attempts counted for key in its current window (0 when none)
+export async function attempts(key) {
+  const doc = await (await limits()).findOne({ _id: key, expires_at: { $gt: new Date() } });
+  return doc?.n ?? 0;
+}
+
+export async function clearAttempts(key) {
+  await (await limits()).deleteOne({ _id: key });
 }
 
 // For one-off scripts, so the process can exit

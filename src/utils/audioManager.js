@@ -1,7 +1,5 @@
 // Centralized Audio Manager for Natal PD Gunadarma 2026
-// Handles HTML5 Audio playback, autoplay detection, synchronization, and fallbacks
-
-const AUDIO_SRC_MP3 = '/audio/jesus-it-is-you.mp3';
+// Plays the <audio id="bg-music"> from index.html: autoplay on load, else on the first tap; shares play state
 
 class ChristmasAudioManager {
   constructor() {
@@ -15,19 +13,9 @@ class ChristmasAudioManager {
   init() {
     if (typeof window === 'undefined' || this.isInitialized) return;
 
-    // Use pre-existing <audio id="bg-music"> from index.html if available
-    const existing = document.getElementById('bg-music');
-    if (existing) {
-      this.audio = existing;
-    } else {
-      this.audio = new Audio();
-      this.audio.src = AUDIO_SRC_MP3;
-      document.body.appendChild(this.audio);
-    }
-
-    this.audio.loop = true;
+    // index.html sets the song, loop and preload
+    this.audio = document.getElementById('bg-music');
     this.audio.volume = 0.85;
-    this.audio.preload = 'auto';
 
     this.audio.addEventListener('play', () => {
       this.isPlaying = true;
@@ -38,17 +26,6 @@ class ChristmasAudioManager {
     this.audio.addEventListener('pause', () => {
       this.isPlaying = false;
       this.notify();
-    });
-
-    // Try playing once enough data is ready
-    this.audio.addEventListener('canplay', () => {
-      if (!this.isPlaying && !this.hasUnlocked) {
-        this.audio.play().then(() => {
-          this.isPlaying = true;
-          this.hasUnlocked = true;
-          this.notify();
-        }).catch(() => {});
-      }
     });
 
     this.isInitialized = true;

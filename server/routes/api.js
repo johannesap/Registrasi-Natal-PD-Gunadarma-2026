@@ -2,8 +2,8 @@ import crypto from 'node:crypto';
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import QRCode from 'qrcode';
-import { regionName } from '../../src/utils/regions.js';
-import { EVENT, GENDERS, DEPARTURES, MEETING_POINTS } from '../../src/utils/event.js';
+import { REGIONS, regionName } from '../../src/utils/regions.js';
+import { EVENT, GENDERS, DEPARTURES, MEETING_POINTS, KOMSEL_OPTIONS } from '../../src/utils/event.js';
 import { intlPhone } from '../../src/utils/phone.js';
 import {
   listRegistrations,
@@ -20,11 +20,17 @@ import {
   updateUser,
   deleteUser,
   countAdmins,
+  countAttempt,
+  attempts,
+  clearAttempts,
 } from '../db.js';
 
 const router = express.Router();
 
 const str = (v) => (typeof v === 'string' ? v.trim() : '');
+
+// Vercel sets x-real-ip to the visitor's address (and overwrites anything the visitor sends); locally it is absent
+const clientIp = (req) => req.get('x-real-ip') || req.socket.remoteAddress;
 
 // ==========================================
 // 0. ADMIN TOKEN (HMAC-signed, stateless for serverless)
@@ -148,7 +154,18 @@ function whatsappLink(r, siteUrl) {
 }
 
 // POST /api/register - Public user registration (NO LOGIN REQUIRED)
+// Every attempt counts (also rejected ones), per network. Loose, because a room of students can share one Wi-Fi.
+const REGISTER_MAX = 20;
+const REGISTER_WINDOW_MS = 60 * 1000;
+
 router.post('/register', async (req, res) => {
+  if ((await countAttempt(`register:${clientIp(req)}`, REGISTER_MAX, REGISTER_WINDOW_MS)) > REGISTER_MAX) {
+    return res.status(429).json({
+      success: false,
+      message: 'Terlalu banyak pendaftaran dari jaringan ini. Tunggu 1 menit lalu coba lagi.',
+    });
+  }
+
   const body = req.body || {};
   const fullName = str(body.fullName);
   const gender = str(body.gender);
@@ -157,10 +174,9 @@ router.post('/register', async (req, res) => {
   const departureArea = departure === 'Bersama' ? str(body.departureArea) : '-';
   const email = str(body.email);
   const whatsapp = str(body.whatsapp).replace(/\D/g, '');
-  const region = (str(body.region) || 'depok').toLowerCase();
-  const komselStatus = str(body.komselStatus) || 'Sudah memiliki Komsel';
+  const region = str(body.region).toLowerCase();
+  const komselStatus = str(body.komselStatus);
   const faculty = str(body.faculty) || 'Universitas Gunadarma';
-  const session = str(body.session) || 'Sesi Utama (17:00 - 21:00 WIB)';
 
   const fail = (message) => res.status(422).json({ success: false, message });
 
@@ -171,6 +187,8 @@ router.post('/register', async (req, res) => {
   // Validation rules
   if (!fullName) return fail('Nama lengkap wajib diisi.');
   if (!GENDERS.includes(gender)) return fail('Pilih jenis kelamin.');
+  if (!REGIONS.some((r) => r.id === region)) return fail('Pilih region kampus.');
+  if (!KOMSEL_OPTIONS.includes(komselStatus)) return fail('Pilih status Komsel.');
   if (!DEPARTURES.includes(departure)) return fail('Pilih opsi keberangkatan (Pribadi / Bersama).');
   if (departure === 'Bersama' && !MEETING_POINTS[departureArea]) return fail('Pilih area keberangkatan.');
   if (!email) return fail('Email wajib diisi.');
@@ -182,7 +200,7 @@ router.post('/register', async (req, res) => {
     return fail('Nomor WhatsApp harus terdiri dari 9 hingga 13 digit angka.');
   }
 
-  const textFields = [fullName, email, region, komselStatus, str(body.mentorName), faculty, session];
+  const textFields = [fullName, email, str(body.mentorName), faculty];
   if (textFields.some((v) => v.length > 150)) return fail('Isian terlalu panjang (maksimal 150 karakter).');
 
   // ponytail: check-then-insert; two submits in the same instant can still both insert. Fine with the
@@ -223,7 +241,6 @@ router.post('/register', async (req, res) => {
     komselStatus,
     mentorName,
     faculty,
-    session,
     departure,
     departureArea,
   });
@@ -269,6 +286,11 @@ router.delete('/registrations/:ticketId', sekretariatOnly, async (req, res) => {
 // ==========================================
 // 3. ADMIN AUTHENTICATION
 // ==========================================
+
+// 5 wrong passwords in a row, then this network is refused for that username for 5 minutes
+const LOGIN_MAX_FAILS = 5;
+const LOGIN_BLOCK_MS = 5 * 60 * 1000;
+
 router.post('/admin/login', async (req, res) => {
   if (!process.env.ADMIN_TOKEN_SECRET) {
     return res.status(500).json({ success: false, message: 'Server belum dikonfigurasi (ADMIN_TOKEN_SECRET).' });
@@ -276,12 +298,23 @@ router.post('/admin/login', async (req, res) => {
 
   const login = str(req.body?.username).toLowerCase();
   const password = str(req.body?.password);
+
+  // Per network AND username: guessing is slowed down, but nobody elsewhere can lock out the real panitia
+  const attemptKey = `login:${clientIp(req)}:${login}`;
+  const blocked = () =>
+    res.status(429).json({
+      success: false,
+      message: `Terlalu banyak percobaan login yang salah. Coba lagi dalam ${LOGIN_BLOCK_MS / 60000} menit.`,
+    });
+  if ((await attempts(attemptKey)) >= LOGIN_MAX_FAILS) return blocked();
+
   const user = login && password ? await findAdminUser(login) : null;
 
   if (user && (await passwordMatches(user, password))) {
     if (!ROLES.includes(user.role)) {
       return res.status(403).json({ success: false, message: 'Akun ini belum punya peran. Hubungi admin.' });
     }
+    await clearAttempts(attemptKey);
     return res.json({
       success: true,
       message: 'Login berhasil',
@@ -290,6 +323,7 @@ router.post('/admin/login', async (req, res) => {
     });
   }
 
+  if ((await countAttempt(attemptKey, LOGIN_MAX_FAILS, LOGIN_BLOCK_MS)) >= LOGIN_MAX_FAILS) return blocked();
   return res.status(401).json({
     success: false,
     message: 'Username atau kata sandi salah. Silakan coba lagi.',

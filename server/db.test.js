@@ -28,10 +28,13 @@ let server;
 let base;
 let ticketId;
 
-const register = (body) =>
+// Attempt limits count per network: a fresh "address" per run keeps runs apart (the counters expire by themselves)
+const TEST_IP = `tes-${Date.now()}`;
+
+const register = (body, ip = TEST_IP) =>
   fetch(`${base}/register`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'x-real-ip': ip },
     body: JSON.stringify(body),
   });
 
@@ -43,6 +46,7 @@ before(() => {
 
 const TEST_PW = 'tes-password-123';
 const testUserIds = [];
+let admId; // tes-adm
 
 after(async () => {
   if (skip) return;
@@ -63,16 +67,14 @@ async function makeUser(name, role) {
   return user;
 }
 
-const loginToken = async (name, password = TEST_PW) =>
-  (
-    await (
-      await fetch(`${base}/admin/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: name, password }),
-      })
-    ).json()
-  ).token;
+const login = (name, password, ip = TEST_IP) =>
+  fetch(`${base}/admin/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-real-ip': ip },
+    body: JSON.stringify({ username: name, password }),
+  });
+
+const loginToken = async (name, password = TEST_PW) => (await (await login(name, password)).json()).token;
 
 const authed = (path, token, method = 'GET', body) =>
   fetch(`${base}${path}`, {
@@ -114,9 +116,34 @@ test('Pribadi always stores area "-"; Bersama needs a known area', { skip }, asy
     { departure: 'Bersama', departureArea: 'Bogor' },
     { departure: 'Naik ojek' },
     { gender: 'X' },
+    { region: 'bogor' },
+    { komselStatus: 'apa saja' },
   ]) {
     assert.equal((await register({ ...person, email: 'salah@example.com', ...bad })).status, 422, JSON.stringify(bad));
   }
+});
+
+test('more than 20 registrations a minute from one network get 429', { skip }, async () => {
+  const ip = `${TEST_IP}-banjir`;
+  const statuses = [];
+  for (let i = 0; i < 21; i++) statuses.push((await register({}, ip)).status);
+  assert.deepEqual(statuses.slice(0, 20), Array(20).fill(422), 'empty forms are rejected but still counted');
+  assert.equal(statuses[20], 429);
+});
+
+test('5 wrong passwords block that username from that network for 5 minutes', { skip }, async () => {
+  await makeUser('tes-kunci', 'sekretariat');
+  for (let i = 1; i <= 4; i++) assert.equal((await login('tes-kunci', 'bukan-ini-123')).status, 401, `try ${i}`);
+  assert.equal((await login('tes-kunci', 'bukan-ini-123')).status, 429, 'the 5th wrong password starts the block');
+  assert.equal((await login('tes-kunci', TEST_PW)).status, 429, 'even the right password waits');
+  assert.equal((await login('tes-kunci', TEST_PW, `${TEST_IP}-lain`)).status, 200, 'other networks are not locked out');
+});
+
+test('a successful login clears earlier wrong passwords', { skip }, async () => {
+  await makeUser('tes-lupa', 'sekretariat');
+  for (let i = 0; i < 4; i++) await login('tes-lupa', 'bukan-ini-123');
+  assert.equal((await login('tes-lupa', TEST_PW)).status, 200);
+  assert.equal((await login('tes-lupa', 'bukan-ini-123')).status, 401, 'counting starts again from zero');
 });
 
 test('checking in twice keeps the first check-in time', { skip }, async () => {
@@ -141,7 +168,7 @@ test('checking in twice keeps the first check-in time', { skip }, async () => {
 
 test('sekretariat sees registrations but not accounts; admin the other way round', { skip }, async () => {
   await makeUser('tes-sek', 'sekretariat');
-  await makeUser('tes-adm', 'admin');
+  admId = (await makeUser('tes-adm', 'admin')).id;
   const sek = await loginToken('tes-sek');
   const adm = await loginToken('tes-adm');
 
@@ -172,14 +199,14 @@ test('admin creates, edits and deletes accounts; changes apply at once', { skip 
   assert.equal((await authed(`/users/${created.data.id}`, adm, 'DELETE')).status, 200);
   assert.equal((await authed('/users', baru)).status, 401, 'deleted account loses access');
 
-  const self = testUserIds[1]; // tes-adm
+  const self = admId;
   assert.equal((await authed(`/users/${self}`, adm, 'DELETE')).status, 409, 'cannot delete own account');
 });
 
 test('the last admin cannot be demoted', { skip }, async (t) => {
   if ((await countAdmins()) !== 1) return t.skip('other admin accounts exist in this database');
   const adm = await loginToken('tes-adm');
-  const res = await authed(`/users/${testUserIds[1]}`, adm, 'PATCH', {
+  const res = await authed(`/users/${admId}`, adm, 'PATCH', {
     name: 'tes-adm',
     email: 'tes-adm@example.com',
     role: 'sekretariat',
