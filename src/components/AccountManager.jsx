@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, LogOut, UserPlus, Pencil, Trash2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Users, History, UserPlus, Pencil, Trash2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { fetchUsers, saveUser, deleteUser } from '../utils/storage';
 import PasswordInput from './PasswordInput';
+import PanelSidebar from './PanelSidebar';
+import AuditLog from './AuditLog';
+
+const ADMIN_VIEWS = [
+  { id: 'users', label: 'Pengguna', icon: Users },
+  { id: 'audit', label: 'Audit Log', icon: History },
+];
 
 const ROLE_LABELS = {
   admin: 'Admin (kelola akun)',
@@ -16,12 +23,13 @@ const inputClass =
 const labelClass = 'block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5';
 
 // Account management for the admin role: list, create, edit and delete panitia logins
-export default function AccountManager({ onBackToHome, onLogout, onAuthError }) {
+export default function AccountManager({ onChangePassword, onLogout, onAuthError }) {
   const [users, setUsers] = useState([]);
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [view, setView] = useState('users'); // 'users' | 'audit'
 
   const load = async () => {
     try {
@@ -85,9 +93,22 @@ export default function AccountManager({ onBackToHome, onLogout, onAuthError }) 
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
-      className="relative min-h-screen w-full py-12 sm:py-20 px-3 sm:px-6 lg:px-8 z-20"
+      className="relative min-h-screen w-full md:flex z-20"
     >
-      <div className="max-w-4xl mx-auto space-y-6">
+      <PanelSidebar
+        items={ADMIN_VIEWS}
+        current={view}
+        onSelect={setView}
+        onChangePassword={onChangePassword}
+        onLogout={onLogout}
+      />
+
+      <div className="flex-1 min-w-0 px-3 sm:px-6 lg:px-8 py-6 sm:py-10">
+      <div className={`${view === 'audit' ? 'max-w-6xl' : 'max-w-4xl'} mx-auto space-y-6`}>
+        {view === 'audit' ? (
+          <AuditLog onAuthError={onAuthError} />
+        ) : (
+          <>
         {/* Header */}
         <div className="glass-panel rounded-2xl p-4 sm:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-amber-400/25">
           <div className="space-y-1">
@@ -100,25 +121,6 @@ export default function AccountManager({ onBackToHome, onLogout, onAuthError }) 
             <p className="text-xs text-gray-400 font-light">
               Admin mengatur akun. Data pendaftar dikelola oleh akun sekretariat.
             </p>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <button
-              onClick={onBackToHome}
-              type="button"
-              aria-label="Ke Beranda"
-              className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-gray-300 text-xs font-medium transition-all cursor-pointer"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Ke Beranda</span>
-            </button>
-            <button
-              onClick={onLogout}
-              type="button"
-              className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-rose-950/40 border border-rose-500/30 hover:bg-rose-900/60 text-rose-300 text-xs font-semibold tracking-wider uppercase transition-all cursor-pointer"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>Logout</span>
-            </button>
           </div>
         </div>
 
@@ -244,6 +246,9 @@ export default function AccountManager({ onBackToHome, onLogout, onAuthError }) 
             </tbody>
           </table>
         </div>
+          </>
+        )}
+      </div>
       </div>
     </motion.section>
   );

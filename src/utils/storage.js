@@ -1,5 +1,3 @@
-import { regionName } from './regions.js';
-
 const AUTH_TOKEN_KEY = 'natal_pd_admin_token_2026';
 
 const API_BASE = '/api';
@@ -94,6 +92,9 @@ export const changePassword = async (currentPassword, newPassword) => {
 // Panitia accounts (admin only)
 export const fetchUsers = async () => (await apiFetch('/users')).data;
 
+// Audit log, newest first (admin only)
+export const fetchAuditLogs = async () => (await apiFetch('/audit-logs')).data;
+
 // Creates when id is empty, otherwise updates; returns { data, message }
 export const saveUser = async (id, user) =>
   apiFetch(id ? `/users/${id}` : '/users', { method: id ? 'PATCH' : 'POST', body: user });
@@ -113,74 +114,12 @@ export const loginAdmin = async (username, password) => {
   }
 };
 
+// Records the logout on the server (audit log), then forgets the token; logging out works even if that call fails
 export const logoutAdmin = () => {
+  apiFetch('/logout', { method: 'POST' }).catch(() => {}); // reads the token before the line below removes it
   try {
     localStorage.removeItem(AUTH_TOKEN_KEY);
   } catch (error) {
     console.error(error);
   }
-};
-
-// One quoted CSV cell; a leading = + - @ gets a ' so Excel shows it as text instead of running a formula
-export const csvCell = (value) =>
-  `"${String(value ?? '')
-    .replace(/^[=+\-@\t\r]/, "'$&")
-    .replace(/"/g, '""')}"`;
-
-// Digits only, written as ="..." so Excel keeps the leading zero of phone numbers
-const csvDigits = (value) => `="${String(value ?? '').replace(/\D/g, '')}"`;
-
-// Export to CSV Function
-export const exportRegistrationsToCSV = (registrations) => {
-  const headers = [
-    'No',
-    'Kode Tiket',
-    'Nama Lengkap',
-    'Jenis Kelamin',
-    'Email',
-    'Nomor WhatsApp',
-    'Region Kampus',
-    'Status Komsel',
-    'Nama Kakak Komsel',
-    'Jurusan/Fakultas',
-    'Keberangkatan',
-    'Area Keberangkatan',
-    'Status Check-In',
-    'Waktu Check-In',
-    'Waktu Registrasi',
-  ];
-
-  const rows = registrations.map((r, idx) => [
-    idx + 1,
-    csvCell(r.ticketId),
-    csvCell(r.fullName),
-    csvCell(r.gender),
-    csvCell(r.email),
-    csvDigits(r.whatsapp),
-    csvCell(regionName(r.region)),
-    csvCell(r.komselStatus),
-    csvCell(r.mentorName || '-'),
-    csvCell(r.faculty || '-'),
-    csvCell(r.departure),
-    csvCell(r.departureArea),
-    r.isCheckedIn ? 'Hadir' : 'Belum Hadir',
-    csvCell(r.checkedInAt || '-'),
-    csvCell(r.registeredAt),
-  ]);
-
-  const csvContent =
-    '﻿' + [headers.join(','), ...rows.map((row) => row.join(','))].join('\r\n');
-
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.setAttribute('href', url);
-  link.setAttribute(
-    'download',
-    `Data_Registrasi_Natal_PD_Gunadarma_2026_${new Date().toISOString().slice(0, 10)}.csv`
-  );
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
 };

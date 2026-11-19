@@ -7,7 +7,7 @@ import {
   Users,
   MapPin,
   Phone,
-  Mail,
+  Tag,
   BookOpen,
   Calendar,
   Sparkles,
@@ -16,7 +16,6 @@ import {
   Ticket,
   Clock,
   ShieldCheck,
-  ArrowLeft,
   Send,
   MessageSquare,
   ExternalLink,
@@ -27,8 +26,18 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { addRegistration } from '../utils/storage';
-import { REGIONS, regionName as getRegionName } from '../utils/regions';
-import { EVENT, GENDERS, DEPARTURES, MEETING_POINTS, KOMSEL_OPTIONS, mapsUrl } from '../utils/event';
+import { CAMPUS_REGIONS, regionName as getRegionName } from '../utils/regions';
+import {
+  EVENT,
+  GENDERS,
+  STATUSES,
+  STUDENT_STATUS,
+  DEPARTURES,
+  MEETING_POINTS,
+  KOMSEL_OPTIONS,
+  WHATSAPP_GROUP_URL,
+  mapsUrl,
+} from '../utils/event';
 
 // Check-in QR holding the ticket code; panitia scan it with "Scan QR" on the sekretariat page
 function TicketQR({ ticketId, className }) {
@@ -135,10 +144,10 @@ function TicketCard({ p, ticketId }) {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <span className="text-[10px] text-gray-400 uppercase tracking-wider block">
-              Email
+              Status
             </span>
-            <span className="text-gray-300 truncate block font-mono text-[11px]">
-              {p.email.trim() || 'email@domain.com'}
+            <span className="text-gray-300 truncate block text-[11px]">
+              {p.status || '-'}
             </span>
           </div>
           <div>
@@ -165,7 +174,7 @@ function TicketCard({ p, ticketId }) {
               Jurusan
             </span>
             <span className="text-gray-200 truncate block">
-              {p.faculty.trim() || 'Gunadarma'}
+              {p.faculty.trim() || '-'}
             </span>
           </div>
         </div>
@@ -248,13 +257,13 @@ function TicketCard({ p, ticketId }) {
   );
 }
 
-export default function RegistrationSection({ onBackToHero }) {
+export default function RegistrationSection() {
   const [formData, setFormData] = useState({
     fullName: '',
     gender: '',
-    email: '',
+    status: '',
     whatsapp: '',
-    region: 'depok',
+    region: '-',
     komselStatus: KOMSEL_OPTIONS[0],
     mentorName: '',
     faculty: '',
@@ -269,6 +278,16 @@ export default function RegistrationSection({ onBackToHero }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
+    if (name === 'status') {
+      // Only Gunadarma students pick a campus region; everyone else is '-'
+      setFormData((prev) => ({
+        ...prev,
+        status: value,
+        region: value === STUDENT_STATUS ? (prev.region === '-' ? '' : prev.region) : '-',
+      }));
+      return;
+    }
 
     if (name === 'departure') {
       // Pribadi: area is always '-'; Bersama: the participant picks a meeting point
@@ -307,12 +326,12 @@ export default function RegistrationSection({ onBackToHero }) {
       const result = await addRegistration({
         fullName: formData.fullName.trim(),
         gender: formData.gender,
-        email: formData.email.trim(),
+        status: formData.status,
         whatsapp: formData.whatsapp.trim(),
         region: formData.region,
         komselStatus: formData.komselStatus,
         mentorName: isBelumPunya ? '-' : (formData.mentorName || '-'),
-        faculty: formData.faculty || 'Gunadarma',
+        faculty: formData.faculty.trim(),
         departure: formData.departure,
         departureArea: formData.departureArea,
       });
@@ -344,6 +363,7 @@ export default function RegistrationSection({ onBackToHero }) {
 
   const isBelumPunya = formData.komselStatus.includes('Belum memiliki Komsel');
   const isBersama = formData.departure === 'Bersama';
+  const isStudent = formData.status === STUDENT_STATUS;
 
   return (
     <section
@@ -357,31 +377,13 @@ export default function RegistrationSection({ onBackToHero }) {
 
       {/* Section Header */}
       <div className="max-w-3xl mx-auto text-center mb-10 sm:mb-14">
-        <button
-          onClick={onBackToHero}
-          type="button"
-          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-medium text-amber-200/80 hover:text-amber-100 bg-white/5 hover:bg-white/10 border border-amber-400/20 mb-6 transition-all duration-300 cursor-pointer backdrop-blur-md"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Kembali ke Halaman Pembuka</span>
-        </button>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-semibold tracking-[0.2em] text-amber-300 uppercase bg-amber-950/30 border border-amber-400/30 mb-3"
-        >
-          <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-          <span>FORMULIR PENDAFTARAN RESMI</span>
-        </motion.div>
-
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.1 }}
           className="text-3xl sm:text-5xl font-extrabold font-['Cinzel'] text-gold-gradient tracking-wide uppercase text-gold-glow mb-4"
         >
+          <span className="block text-xl sm:text-3xl tracking-[0.3em] mb-1">Formulir</span>
           REGISTRASI NATAL 2026
         </motion.h2>
 
@@ -441,34 +443,39 @@ export default function RegistrationSection({ onBackToHero }) {
               </div>
             </div>
 
-            {/* Field: Jenis Kelamin & Region Kampus (2 Columns) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-              <ChoicePills
-                legend="Jenis Kelamin"
-                name="gender"
-                options={GENDERS}
-                value={formData.gender}
-                onChange={handleChange}
-              />
+            {/* Field: Jenis Kelamin */}
+            <ChoicePills
+              legend="Jenis Kelamin"
+              name="gender"
+              options={GENDERS}
+              value={formData.gender}
+              onChange={handleChange}
+            />
 
+            {/* Field: Status & Region Kampus (2 Columns) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
               <div>
-                <label htmlFor="reg-region" className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5 sm:mb-2">
-                  Region Kampus <span className="text-rose-400">*</span>
+                <label htmlFor="reg-status" className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5 sm:mb-2">
+                  Status <span className="text-rose-400">*</span>
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-                    <MapPin className="w-4 h-4 text-amber-300/70" />
+                    <Tag className="w-4 h-4 text-amber-300/70" />
                   </div>
                   <select
-                    id="reg-region"
-                    name="region"
-                    value={formData.region}
+                    id="reg-status"
+                    name="status"
+                    required
+                    value={formData.status}
                     onChange={handleChange}
                     className="w-full pl-10 pr-10 py-3 bg-neutral-900/80 border border-white/10 rounded-xl text-base sm:text-sm text-gray-100 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all appearance-none cursor-pointer"
                   >
-                    {REGIONS.map((r) => (
-                      <option key={r.id} value={r.id} className="bg-neutral-900 text-gray-100">
-                        {r.name}
+                    <option value="" disabled className="bg-neutral-900 text-gray-400">
+                      Pilih status
+                    </option>
+                    {STATUSES.map((st) => (
+                      <option key={st} value={st} className="bg-neutral-900 text-gray-100">
+                        {st}
                       </option>
                     ))}
                   </select>
@@ -477,57 +484,76 @@ export default function RegistrationSection({ onBackToHero }) {
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Field: Email & WhatsApp (2 Columns) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
               <div>
-                <label htmlFor="reg-email" className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5 sm:mb-2">
-                  Email Aktif <span className="text-rose-400">*</span>
+                <label htmlFor="reg-region" className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5 sm:mb-2">
+                  Region Kampus {isStudent && <span className="text-rose-400">*</span>}
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-                    <Mail className="w-4 h-4 text-amber-300/70" />
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <MapPin className="w-4 h-4 text-amber-300/70" />
                   </div>
-                  <input
-                    type="email"
-                    id="reg-email"
-                    name="email"
-                    required
-                    value={formData.email}
+                  <select
+                    id="reg-region"
+                    name="region"
+                    value={formData.region}
                     onChange={handleChange}
-                    placeholder="Contoh: nama@gmail.com"
-                    className="w-full pl-10 pr-4 py-3 bg-neutral-900/70 border border-white/10 rounded-xl text-base sm:text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
-                  />
+                    disabled={!isStudent}
+                    required={isStudent}
+                    className={`w-full pl-10 pr-10 py-3 rounded-xl text-base sm:text-sm transition-all appearance-none ${
+                      isStudent
+                        ? 'bg-neutral-900/80 border border-white/10 text-gray-100 cursor-pointer focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400'
+                        : 'bg-neutral-800/60 border border-amber-400/30 text-amber-300 font-mono font-bold cursor-not-allowed'
+                    }`}
+                  >
+                    {isStudent ? (
+                      <>
+                        <option value="" disabled className="bg-neutral-900 text-gray-400">
+                          Pilih region kampus
+                        </option>
+                        {CAMPUS_REGIONS.map((r) => (
+                          <option key={r.id} value={r.id} className="bg-neutral-900 text-gray-100">
+                            {r.name}
+                          </option>
+                        ))}
+                      </>
+                    ) : (
+                      <option value="-">-</option>
+                    )}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-gray-400">
+                    <span className="text-xs">▼</span>
+                  </div>
                 </div>
               </div>
+            </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-                  <label htmlFor="reg-whatsapp" className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase">
-                    Nomor WhatsApp <span className="text-rose-400">*</span>
-                  </label>
-                  <span className="text-[10px] font-mono text-gray-400">
-                    {formData.whatsapp.length}/13 angka
-                  </span>
+            {/* Field: Nomor WhatsApp */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                <label htmlFor="reg-whatsapp" className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase">
+                  Nomor WhatsApp <span className="text-rose-400">*</span>
+                </label>
+                <span className="text-[10px] font-mono text-gray-400">
+                  {formData.whatsapp.length}/13 angka
+                </span>
+              </div>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                  <Phone className="w-4 h-4 text-amber-300/70" />
                 </div>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-                    <Phone className="w-4 h-4 text-amber-300/70" />
-                  </div>
-                  <input
-                    type="tel"
-                    inputMode="numeric"
-                    id="reg-whatsapp"
-                    name="whatsapp"
-                    required
-                    value={formData.whatsapp}
-                    onChange={handleChange}
-                    placeholder="Contoh: 081234567890"
-                    maxLength={13}
-                    className="w-full pl-10 pr-4 py-3 bg-neutral-900/70 border border-white/10 rounded-xl text-base sm:text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all font-mono"
-                  />
-                </div>
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  id="reg-whatsapp"
+                  name="whatsapp"
+                  required
+                  value={formData.whatsapp}
+                  onChange={handleChange}
+                  placeholder="Contoh: 081234567890"
+                  maxLength={13}
+                  className="w-full pl-10 pr-4 py-3 bg-neutral-900/70 border border-white/10 rounded-xl text-base sm:text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all font-mono"
+                />
               </div>
             </div>
 
@@ -581,10 +607,10 @@ export default function RegistrationSection({ onBackToHero }) {
               </div>
             </div>
 
-            {/* Field: Jurusan / Fakultas */}
+            {/* Field: Jurusan */}
             <div>
               <label htmlFor="reg-faculty" className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5 sm:mb-2">
-                Jurusan / Fakultas
+                Jurusan
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
@@ -596,7 +622,7 @@ export default function RegistrationSection({ onBackToHero }) {
                   name="faculty"
                   value={formData.faculty}
                   onChange={handleChange}
-                  placeholder="Contoh: Informatika / FTI"
+                  placeholder="Contoh: Informatika"
                   className="w-full pl-10 pr-4 py-3 bg-neutral-900/70 border border-white/10 rounded-xl text-base sm:text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
                 />
               </div>
@@ -761,7 +787,7 @@ export default function RegistrationSection({ onBackToHero }) {
               <p className="text-xs sm:text-sm text-gray-300 font-light mb-5">
                 Terima kasih, <strong className="text-white">{registered.fullName}</strong>.{' '}
                 {registered.alreadyRegistered
-                  ? 'Email ini sudah terdaftar sebelumnya, jadi ini tiket Anda yang lama.'
+                  ? 'Nomor WhatsApp ini sudah terdaftar sebelumnya, jadi ini tiket Anda yang lama.'
                   : 'Pendaftaran Anda sudah tersimpan.'}
               </p>
 
@@ -851,6 +877,19 @@ export default function RegistrationSection({ onBackToHero }) {
                   <span>Buka Salinan Tiket di WhatsApp</span>
                   <ExternalLink className="w-3.5 h-3.5" />
                 </a>
+
+                {WHATSAPP_GROUP_URL && (
+                  <a
+                    href={WHATSAPP_GROUP_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-3 rounded-xl font-semibold text-emerald-100 bg-emerald-900/50 border border-emerald-400/50 hover:bg-emerald-800/60 text-xs tracking-wider uppercase flex items-center justify-center gap-2 cursor-pointer transition-all"
+                  >
+                    <Users className="w-4 h-4" />
+                    <span>Gabung Grup WhatsApp Peserta</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                )}
 
                 <div className="flex flex-col sm:flex-row gap-2.5">
                   <button

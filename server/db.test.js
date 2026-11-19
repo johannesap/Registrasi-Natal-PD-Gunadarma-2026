@@ -16,7 +16,7 @@ const { default: bcrypt } = await import('bcryptjs');
 const person = {
   fullName: 'Tes Otomatis',
   gender: 'Perempuan',
-  email: 'Tes.Otomatis@Example.com',
+  status: 'Mahasiswa Gunadarma',
   whatsapp: '081299990001',
   region: 'depok',
   komselStatus: 'Sudah memiliki Komsel (Tuliskan nama Kakak Komsel di bawah)',
@@ -52,6 +52,10 @@ after(async () => {
   if (skip) return;
   if (ticketId) await deleteRegistration(ticketId);
   for (const id of testUserIds) await deleteUser(id);
+  // Audit lines written by the test accounts
+  const client = await new MongoClient(process.env.MONGODB_URI).connect();
+  await client.db(process.env.MONGODB_DATABASE).collection('audit_logs').deleteMany({ user: /^tes-/ });
+  await client.close();
   await closeDb();
   server.close();
 });
@@ -83,23 +87,23 @@ const authed = (path, token, method = 'GET', body) =>
     body: body && JSON.stringify(body),
   });
 
-test('registering again with the same email and phone returns the same ticket', { skip }, async () => {
+test('registering again with the same phone and name returns the same ticket', { skip }, async () => {
   const first = await (await register(person)).json();
   assert.equal(first.success, true);
   ticketId = first.data.ticketId;
   assert.match(ticketId, /^NATAL-UG-\d{4}-0001$/, 'suffix is the last 4 digits of the phone');
   assert.equal(first.data.departureArea, 'Depok');
 
-  // Email in other letter case and phone written as 62…: still the same person
+  // Name in other letter case and phone written as 62…: still the same person
   const again = await (
-    await register({ ...person, email: person.email.toLowerCase(), whatsapp: '6281299990001' })
+    await register({ ...person, fullName: 'tes  OTOMATIS', whatsapp: '6281299990001' })
   ).json();
   assert.equal(again.alreadyRegistered, true);
   assert.equal(again.data.ticketId, ticketId);
 });
 
-test('same email with another phone gets no ticket back', { skip }, async () => {
-  const res = await register({ ...person, whatsapp: '081200000000' });
+test('same phone with another name gets no ticket back', { skip }, async () => {
+  const res = await register({ ...person, fullName: 'Orang Lain' });
   assert.equal(res.status, 409);
   const body = await res.json();
   assert.equal(body.data, undefined);
@@ -107,7 +111,7 @@ test('same email with another phone gets no ticket back', { skip }, async () => 
 });
 
 test('Pribadi always stores area "-"; Bersama needs a known area', { skip }, async () => {
-  const pribadi = await register({ ...person, email: 'pribadi@example.com', departure: 'Pribadi', departureArea: 'Depok' });
+  const pribadi = await register({ ...person, whatsapp: '081299990002', departure: 'Pribadi', departureArea: 'Depok' });
   const body = await pribadi.json();
   await deleteRegistration(body.data.ticketId);
   assert.equal(body.data.departureArea, '-');
@@ -118,9 +122,18 @@ test('Pribadi always stores area "-"; Bersama needs a known area', { skip }, asy
     { gender: 'X' },
     { region: 'bogor' },
     { komselStatus: 'apa saja' },
+    { komselStatus: 'Alumni / Pengurus' },
+    { region: 'alumni_tamu' },
+    { status: 'Dosen' },
   ]) {
-    assert.equal((await register({ ...person, email: 'salah@example.com', ...bad })).status, 422, JSON.stringify(bad));
+    assert.equal((await register({ ...person, whatsapp: '081299990003', ...bad })).status, 422, JSON.stringify(bad));
   }
+});
+
+test('only Gunadarma students keep a campus region; other statuses store "-"', { skip }, async () => {
+  const body = await (await register({ ...person, whatsapp: '081299990004', status: 'Media Partner', region: 'depok' })).json();
+  await deleteRegistration(body.data.ticketId);
+  assert.equal(body.data.region, '-');
 });
 
 test('more than 20 registrations a minute from one network get 429', { skip }, async () => {
@@ -137,6 +150,15 @@ test('5 wrong passwords block that username from that network for 5 minutes', { 
   assert.equal((await login('tes-kunci', 'bukan-ini-123')).status, 429, 'the 5th wrong password starts the block');
   assert.equal((await login('tes-kunci', TEST_PW)).status, 429, 'even the right password waits');
   assert.equal((await login('tes-kunci', TEST_PW, `${TEST_IP}-lain`)).status, 200, 'other networks are not locked out');
+});
+
+test('overlong usernames are refused without being counted or stored', { skip }, async () => {
+  const huge = 'x'.repeat(5000);
+  for (let i = 0; i < 6; i++) assert.equal((await login(huge, 'apa-saja-123')).status, 401, 'never 429: not counted');
+  const client = await new MongoClient(process.env.MONGODB_URI).connect();
+  const stored = await client.db(process.env.MONGODB_DATABASE).collection('limits').countDocuments({ _id: { $regex: 'xxxxxxxxxx' } });
+  await client.close();
+  assert.equal(stored, 0);
 });
 
 test('a successful login clears earlier wrong passwords', { skip }, async () => {
@@ -176,6 +198,23 @@ test('sekretariat sees registrations but not accounts; admin the other way round
   assert.equal((await authed('/users', sek)).status, 403);
   assert.equal((await authed('/users', adm)).status, 200);
   assert.equal((await authed('/registrations', adm)).status, 403);
+});
+
+test('the audit log records logins and check-ins; only admin can read it', { skip }, async () => {
+  const sek = await loginToken('tes-sek');
+  assert.equal((await authed(`/registrations/${ticketId}/checkin`, sek, 'PATCH', { checkedIn: true })).status, 200);
+  await login('tes-sek', 'bukan-ini-123');
+
+  assert.equal((await authed('/audit-logs', sek)).status, 403);
+  const logs = (await (await authed('/audit-logs', await loginToken('tes-adm'))).json()).data;
+  const mine = logs.filter((l) => l.user === 'tes-sek').map((l) => l.action);
+  assert.ok(mine.includes('LOGIN'));
+  assert.ok(mine.includes('LOGIN GAGAL'));
+  const checkIn = logs.find((l) => l.user === 'tes-sek' && l.action === 'CHECK-IN');
+  assert.equal(checkIn.entity, 'peserta');
+  assert.ok(checkIn.detail.startsWith(ticketId), 'names the ticket');
+  // The login helper sends the network address as x-real-ip, the way Vercel does
+  assert.equal(logs.find((l) => l.user === 'tes-sek' && l.action === 'LOGIN').ip, TEST_IP);
 });
 
 test('admin creates, edits and deletes accounts; changes apply at once', { skip }, async () => {

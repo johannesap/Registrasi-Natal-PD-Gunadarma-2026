@@ -17,6 +17,7 @@ class ChristmasAudioManager {
     this.audio = document.getElementById('bg-music');
     this.audio.volume = 0.85;
 
+    // The only place play state changes: every way of starting or stopping the song fires these events
     this.audio.addEventListener('play', () => {
       this.isPlaying = true;
       this.hasUnlocked = true;
@@ -41,9 +42,6 @@ class ChristmasAudioManager {
 
     try {
       await this.audio.play();
-      this.isPlaying = true;
-      this.hasUnlocked = true;
-      this.notify();
       return true;
     } catch {
       // Browser blocked unmuted autoplay.
@@ -60,9 +58,6 @@ class ChristmasAudioManager {
 
       try {
         await this.audio.play();
-        this.isPlaying = true;
-        this.hasUnlocked = true;
-        this.notify();
         cleanup();
       } catch {
         // If this specific event (e.g. pointerdown) was not accepted by browser policy,
@@ -93,9 +88,6 @@ class ChristmasAudioManager {
 
     try {
       await this.audio.play();
-      this.isPlaying = true;
-      this.hasUnlocked = true;
-      this.notify();
       return true;
     } catch (e) {
       console.warn('Audio playback error:', e);
@@ -104,11 +96,7 @@ class ChristmasAudioManager {
   }
 
   pause() {
-    if (this.audio) {
-      this.audio.pause();
-      this.isPlaying = false;
-      this.notify();
-    }
+    this.audio?.pause();
   }
 
   async toggle() {

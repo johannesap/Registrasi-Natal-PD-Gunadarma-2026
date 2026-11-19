@@ -6,7 +6,6 @@ import {
   User,
   KeyRound,
   ShieldCheck,
-  LogOut,
   Search,
   CheckCircle2,
   Eye,
@@ -18,11 +17,11 @@ import {
   MapPin,
   Ticket,
   Clock,
-  Sparkles,
   ArrowLeft,
   Phone,
-  Mail,
-  FileSpreadsheet,
+  Tag,
+  Bus,
+  FileText,
   AlertCircle,
 } from 'lucide-react';
 import {
@@ -33,13 +32,20 @@ import {
   currentRole,
   loginAdmin,
   logoutAdmin,
-  exportRegistrationsToCSV,
 } from '../utils/storage';
 import { REGIONS, regionName } from '../utils/regions';
 import { intlPhone } from '../utils/phone';
 import AccountManager from './AccountManager';
 import ChangePasswordDialog from './ChangePasswordDialog';
 import CheckInScanner from './CheckInScanner';
+import BusData from './BusData';
+import ParticipantPdf from './ParticipantPdf';
+import PanelSidebar from './PanelSidebar';
+
+const SEKRETARIAT_VIEWS = [
+  { id: 'dashboard', label: 'Data Peserta', icon: Users },
+  { id: 'bus', label: 'Data Bus', icon: Bus },
+];
 
 export default function AdminPortal({ onBackToHome }) {
   const [isAuthenticated, setIsAuthenticated] = useState(isAdminAuthenticated());
@@ -61,6 +67,8 @@ export default function AdminPortal({ onBackToHome }) {
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
+  const [view, setView] = useState('dashboard'); // 'dashboard' | 'bus'
+  const [printJob, setPrintJob] = useState(null); // { at, rows } while the "Export PDF" print dialog is open
 
   // admin only manages accounts; sekretariat gets the registrations dashboard
   const role = isAuthenticated ? currentRole() : null;
@@ -174,9 +182,8 @@ export default function AdminPortal({ onBackToHome }) {
     }
   };
 
-  const handleExport = () => {
-    exportRegistrationsToCSV(filteredData);
-  };
+  // Exports what the filters currently show
+  const handleExport = () => setPrintJob({ at: Date.now(), rows: filteredData });
 
   // Filtered registrations
   const filteredData = useMemo(() => {
@@ -186,7 +193,7 @@ export default function AdminPortal({ onBackToHome }) {
         !q ||
         item.fullName?.toLowerCase().includes(q) ||
         item.departureArea?.toLowerCase().includes(q) ||
-        item.email?.toLowerCase().includes(q) ||
+        item.status?.toLowerCase().includes(q) ||
         item.whatsapp?.toLowerCase().includes(q) ||
         item.ticketId?.toLowerCase().includes(q) ||
         item.mentorName?.toLowerCase().includes(q) ||
@@ -213,14 +220,12 @@ export default function AdminPortal({ onBackToHome }) {
   const stats = useMemo(() => {
     const total = registrations.length;
     const hadir = registrations.filter((r) => r.isCheckedIn).length;
-    const belumKomsel = registrations.filter((r) =>
-      r.komselStatus?.includes('Belum memiliki')
-    ).length;
 
     // Region counts
     const regionMap = {};
     registrations.forEach((r) => {
       const reg = r.region || 'Lainnya';
+      if (reg === '-') return; // not a Gunadarma student: no campus region
       regionMap[reg] = (regionMap[reg] || 0) + 1;
     });
 
@@ -236,12 +241,13 @@ export default function AdminPortal({ onBackToHome }) {
     return {
       total,
       hadir,
-      belumKomsel,
+      tidakHadir: total - hadir,
       topRegion: topRegion !== '-' ? regionName(topRegion).toUpperCase() : '-',
     };
   }, [registrations]);
 
   return (
+    <>
     <AnimatePresence mode="wait">
       {!isAuthenticated ? (
         <motion.section
@@ -372,7 +378,7 @@ export default function AdminPortal({ onBackToHome }) {
       ) : role === 'admin' ? (
         <AccountManager
           key="admin-accounts-screen"
-          onBackToHome={onBackToHome}
+          onChangePassword={() => setShowPasswordDialog(true)}
           onLogout={handleLogout}
           onAuthError={handleActionError}
         />
@@ -383,10 +389,23 @@ export default function AdminPortal({ onBackToHome }) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.3, ease: 'easeOut' }}
-          className="relative min-h-screen w-full py-12 sm:py-20 px-3 sm:px-6 lg:px-8 z-20 transform-gpu"
+          className="relative min-h-screen w-full md:flex z-20 transform-gpu"
           style={{ willChange: 'transform, opacity' }}
         >
-      <div className="max-w-7xl mx-auto space-y-6">
+        <PanelSidebar
+          items={SEKRETARIAT_VIEWS}
+          current={view}
+          onSelect={setView}
+          onChangePassword={() => setShowPasswordDialog(true)}
+          onLogout={handleLogout}
+        />
+
+        <div className="flex-1 min-w-0 px-3 sm:px-6 lg:px-8 py-6 sm:py-10">
+          <div className="max-w-7xl mx-auto space-y-6">
+          {view === 'bus' ? (
+            <BusData registrations={registrations} />
+          ) : (
+            <>
         {/* Top Header Bar */}
         <div className="glass-panel rounded-2xl p-4 sm:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-amber-400/25">
           <div className="space-y-1">
@@ -432,41 +451,12 @@ export default function AdminPortal({ onBackToHome }) {
               onClick={handleExport}
               type="button"
               className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-600/30 border border-emerald-400/40 text-emerald-200 hover:bg-emerald-600/50 text-xs font-semibold tracking-wider uppercase transition-all cursor-pointer shadow-sm"
-              title="Unduh seluruh data registrasi dalam format CSV/Excel"
+              title="Simpan data peserta (sesuai filter) sebagai PDF"
             >
-              <FileSpreadsheet className="w-4 h-4 text-emerald-300" />
-              <span>Export CSV/Excel</span>
+              <FileText className="w-4 h-4 text-emerald-300" />
+              <span>Export PDF</span>
             </button>
 
-            {/* Change own password */}
-            <button
-              onClick={() => setShowPasswordDialog(true)}
-              type="button"
-              className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white/5 border border-amber-400/30 hover:bg-amber-500/15 text-amber-200 text-xs font-semibold tracking-wider uppercase transition-all cursor-pointer"
-            >
-              <KeyRound className="w-3.5 h-3.5 text-amber-400" />
-              <span>Ganti Password</span>
-            </button>
-
-            {/* Back to Home Button */}
-            <button
-              onClick={onBackToHome}
-              type="button"
-              className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-gray-300 text-xs font-medium transition-all cursor-pointer"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Ke Beranda</span>
-            </button>
-
-            {/* Logout Button */}
-            <button
-              onClick={handleLogout}
-              type="button"
-              className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-rose-950/40 border border-rose-500/30 hover:bg-rose-900/60 text-rose-300 text-xs font-semibold tracking-wider uppercase transition-all cursor-pointer"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>Logout</span>
-            </button>
           </div>
         </div>
 
@@ -490,7 +480,7 @@ export default function AdminPortal({ onBackToHome }) {
           <div className="glass-panel rounded-2xl p-4 sm:p-5 border border-emerald-400/25 relative overflow-hidden">
             <div className="flex items-center justify-between text-gray-400 mb-2">
               <span className="text-[11px] uppercase tracking-wider font-semibold text-emerald-300">
-                Hadir (Check-In)
+                Hadir
               </span>
               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
             </div>
@@ -502,18 +492,18 @@ export default function AdminPortal({ onBackToHome }) {
             </span>
           </div>
 
-          {/* Card 3: Komsel Ratio */}
+          {/* Card 3: Not (yet) present */}
           <div className="glass-panel rounded-2xl p-4 sm:p-5 border border-amber-400/20 relative overflow-hidden">
             <div className="flex items-center justify-between text-gray-400 mb-2">
               <span className="text-[11px] uppercase tracking-wider font-semibold text-amber-200">
-                Belum Komsel
+                Tidak Hadir
               </span>
-              <Sparkles className="w-4 h-4 text-amber-300" />
+              <Clock className="w-4 h-4 text-amber-300" />
             </div>
             <div className="text-2xl sm:text-4xl font-extrabold font-mono text-amber-300">
-              {stats.belumKomsel}
+              {stats.tidakHadir}
             </div>
-            <span className="text-[10px] text-gray-400 mt-1 block">Rindu Bergabung Komsel</span>
+            <span className="text-[10px] text-gray-400 mt-1 block">Belum tercatat hadir</span>
           </div>
 
           {/* Card 4: Region Terbanyak */}
@@ -544,7 +534,7 @@ export default function AdminPortal({ onBackToHome }) {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 aria-label="Cari peserta"
-                placeholder="Cari Nama, Email, WA, Area..."
+                placeholder="Cari Nama, Status, WA, Area..."
                 className="w-full pl-10 pr-4 py-2.5 bg-neutral-900/80 border border-white/10 rounded-xl text-xs sm:text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
               />
             </div>
@@ -586,7 +576,7 @@ export default function AdminPortal({ onBackToHome }) {
                 className="w-full pl-9 pr-8 py-2.5 bg-neutral-900/80 border border-white/10 rounded-xl text-xs sm:text-sm text-gray-100 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all appearance-none cursor-pointer"
               >
                 <option value="Semua" className="bg-neutral-900 text-white">
-                  Semua Komsel
+                  Komsel
                 </option>
                 <option value="Sudah Komsel" className="bg-neutral-900 text-white">
                   Sudah Memiliki Komsel
@@ -612,13 +602,13 @@ export default function AdminPortal({ onBackToHome }) {
                 className="w-full pl-9 pr-8 py-2.5 bg-neutral-900/80 border border-white/10 rounded-xl text-xs sm:text-sm text-gray-100 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all appearance-none cursor-pointer"
               >
                 <option value="Semua" className="bg-neutral-900 text-white">
-                  Semua Presensi
+                  Presensi
                 </option>
                 <option value="Hadir" className="bg-neutral-900 text-white">
-                  Sudah Check-In
+                  Hadir
                 </option>
                 <option value="Belum Hadir" className="bg-neutral-900 text-white">
-                  Belum Check-In
+                  Belum Hadir
                 </option>
               </select>
               <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400 text-xs">
@@ -709,8 +699,8 @@ export default function AdminPortal({ onBackToHome }) {
                           </a>
                         </div>
                         <div className="flex items-center gap-1.5 text-gray-400 text-[11px] truncate max-w-[170px]">
-                          <Mail className="w-3 h-3 text-amber-300 shrink-0" />
-                          <span className="truncate">{row.email}</span>
+                          <Tag className="w-3 h-3 text-amber-300 shrink-0" />
+                          <span className="truncate">{row.status}</span>
                         </div>
                       </td>
                       <td className="hidden md:table-cell py-3.5 px-4">
@@ -784,20 +774,15 @@ export default function AdminPortal({ onBackToHome }) {
             </div>
           )}
         </div>
+            </>
+          )}
+        </div>
       </div>
+
+      {printJob && <ParticipantPdf key={printJob.at} at={printJob.at} rows={printJob.rows} onDone={() => setPrintJob(null)} />}
 
       {showScanner && role === 'sekretariat' && (
         <CheckInScanner onScan={handleScan} onClose={() => setShowScanner(false)} />
-      )}
-
-      {showPasswordDialog && (
-        <ChangePasswordDialog
-          onClose={() => setShowPasswordDialog(false)}
-          onAuthError={(err) => {
-            setShowPasswordDialog(false);
-            handleActionError(err);
-          }}
-        />
       )}
 
       {/* PARTICIPANT DETAIL TICKET MODAL */}
@@ -862,8 +847,8 @@ export default function AdminPortal({ onBackToHome }) {
                     <span className="text-white">{selectedParticipant.whatsapp}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-gray-400 uppercase block">Email</span>
-                    <span className="text-white truncate block">{selectedParticipant.email}</span>
+                    <span className="text-[10px] text-gray-400 uppercase block">Status</span>
+                    <span className="text-white truncate block">{selectedParticipant.status}</span>
                   </div>
                 </div>
 
@@ -880,7 +865,7 @@ export default function AdminPortal({ onBackToHome }) {
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <span className="text-[10px] text-gray-400 uppercase block">Jurusan/Fakultas</span>
+                    <span className="text-[10px] text-gray-400 uppercase block">Jurusan</span>
                     <span className="text-white">{selectedParticipant.faculty || '-'}</span>
                   </div>
                   <div>
@@ -968,5 +953,17 @@ export default function AdminPortal({ onBackToHome }) {
         </motion.section>
       )}
     </AnimatePresence>
+
+    {/* Admin and sekretariat both change their own password from the sidebar */}
+    {showPasswordDialog && (
+      <ChangePasswordDialog
+        onClose={() => setShowPasswordDialog(false)}
+        onAuthError={(err) => {
+          setShowPasswordDialog(false);
+          handleActionError(err);
+        }}
+      />
+    )}
+    </>
   );
 }

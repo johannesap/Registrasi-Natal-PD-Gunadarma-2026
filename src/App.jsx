@@ -36,8 +36,16 @@ export default function App() {
 
   // Immediate autoplay on opening web
   useEffect(() => {
-    audioManager.attemptAutoplay();
+    if (window.location.hash !== "#admin") audioManager.attemptAutoplay();
   }, []);
+
+  // The panitia page has no navbar (so no music button): stop the song there and keep it stopped
+  useEffect(() => {
+    if (currentPage !== "admin") return;
+    audioManager.init();
+    audioManager.pause();
+    return audioManager.subscribe((playing) => playing && audioManager.pause());
+  }, [currentPage]);
 
   const navigateTo = (page) => {
     if (page === "admin") {
@@ -54,7 +62,7 @@ export default function App() {
   };
 
   return (
-    <div className="relative min-h-screen w-full text-gray-100 overflow-x-hidden selection:bg-amber-400/25 selection:text-amber-200 flex flex-col justify-between">
+    <div className="relative min-h-screen w-full text-gray-100 overflow-x-clip selection:bg-amber-400/25 selection:text-amber-200 flex flex-col justify-between">
       {/* 1. CINEMATIC HIGH-PERFORMANCE BACKGROUND (GPU Optimized) */}
       <div className="fixed inset-0 pointer-events-none -z-30 overflow-hidden">
         {/* Unified multi-stop night sky gradient - 0% blur overhead, 100% GPU accelerated */}
@@ -83,10 +91,10 @@ export default function App() {
       </div>
 
       {/* 2. 60FPS CANVAS (Stars, Snow, Golden Stardust) */}
-      <ChristmasNightCanvas />
+      {currentPage !== "admin" && <ChristmasNightCanvas />}
 
-      {/* 3. FLOATING NAVBAR */}
-      <Navbar onNavigate={navigateTo} />
+      {/* 3. FLOATING NAVBAR (the panitia page has its own sidebar instead) */}
+      {currentPage !== "admin" && <Navbar onNavigate={navigateTo} />}
 
       {/* 4. MULTI-PAGE ROUTER WITH CINEMATIC TRANSITIONS */}
       <main className="relative z-20 flex-1 flex flex-col justify-center">
@@ -115,7 +123,7 @@ export default function App() {
               className="w-full pt-16 transform-gpu"
               style={{ willChange: "transform, opacity" }}
             >
-              <RegistrationSection onBackToHero={() => navigateTo("hero")} />
+              <RegistrationSection />
             </motion.div>
           )}
 
@@ -126,7 +134,7 @@ export default function App() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full pt-16 transform-gpu"
+              className="w-full transform-gpu"
               style={{ willChange: "transform, opacity" }}
             >
               <Suspense fallback={null}>
@@ -138,7 +146,8 @@ export default function App() {
       </main>
 
       {/* 5. OFFICIAL FOOTER */}
-      <Footer onNavigate={navigateTo} />
+      {/* The panitia portal is its own page (#admin): no public footer there */}
+      {currentPage !== "admin" && <Footer />}
     </div>
   );
 }

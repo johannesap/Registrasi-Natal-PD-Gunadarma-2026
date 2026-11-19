@@ -10,14 +10,28 @@ export const EVENT = {
     'Lalu kata malaikat itu kepada mereka: “Jangan takut, sebab sesungguhnya aku memberitakan kepadamu kesukaan besar untuk seluruh bangsa: Hari ini telah lahir bagimu Juruselamat, yaitu Kristus, Tuhan, di kota Daud.',
 };
 
+// Invite link of the participants' WhatsApp group (https://chat.whatsapp.com/...), shown after registering and in
+// the ticket message. Empty hides both.
+export const WHATSAPP_GROUP_URL = 'https://chat.whatsapp.com/DHO3Z41rYc1HLd1xzuftPJ?s=sw&p=a&iam=2';
+
 export const GENDERS = ['Laki-laki', 'Perempuan'];
+
+// Only this status picks a campus region; every other status has region '-'
+export const STUDENT_STATUS = 'Mahasiswa Gunadarma';
+
+export const STATUSES = [
+  STUDENT_STATUS,
+  'Alumni Gunadarma',
+  'Media Partner',
+  'Organisasi Mahasiswa',
+  'Umum (di luar Gunadarma)',
+  'Undangan (Gereja dan Kampus Lain)',
+];
 
 // The full text is what gets stored; the form shows it without the part in brackets
 export const KOMSEL_OPTIONS = [
   'Sudah memiliki Komsel (Tuliskan nama Kakak Komsel di bawah)',
   'Belum memiliki Komsel (Rindu bergabung dengan Komsel PD)',
-  'Alumni / Pengurus',
-  'Tamu / Undangan Khusus',
 ];
 
 // "Bersama" departs from one of these meeting points; "Pribadi" travels on their own (area '-')

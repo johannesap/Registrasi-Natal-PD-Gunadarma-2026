@@ -1,4 +1,5 @@
 import { MongoClient, ObjectId } from 'mongodb';
+import { intlPhone } from '../src/utils/phone.js';
 
 // Documents keep the snake_case fields the database already has (first written by the old Laravel backend)
 let dbPromise = null;
@@ -12,6 +13,7 @@ async function connect() {
   await db.collection('registrations').createIndex({ ticket_id: 1 }, { unique: true });
   // Attempt counters (login, register) delete themselves once their window is over
   await db.collection('limits').createIndex({ expires_at: 1 }, { expireAfterSeconds: 0 });
+  await db.collection('audit_logs').createIndex({ at: -1 });
   return db;
 }
 
@@ -59,12 +61,13 @@ export function toFrontend(doc) {
     fullName: doc.full_name,
     // Registrations from before the gender field (they have an NPM instead) show '-'
     gender: doc.gender || '-',
-    email: doc.email,
+    // Registrations from before the status field (they have an email instead) show '-'
+    status: doc.status || '-',
     whatsapp: doc.whatsapp,
     region: doc.region,
     komselStatus: doc.komsel_status,
     mentorName: doc.mentor_name || '-',
-    faculty: doc.faculty || 'Universitas Gunadarma',
+    faculty: doc.faculty || '-',
     departure: doc.departure || '-',
     departureArea: doc.departure_area || '-',
     isCheckedIn: Boolean(doc.is_checked_in),
@@ -74,13 +77,15 @@ export function toFrontend(doc) {
 }
 
 export async function listRegistrations() {
-  const docs = await (await registrations()).find().sort({ _id: -1 }).toArray();
+  // Newest registration first
+  const docs = await (await registrations()).find().sort({ created_at: -1, _id: -1 }).toArray();
   return docs.map(toFrontend);
 }
 
-// Same email means the same person submitting again
-export async function findExistingRegistration(email) {
-  const doc = await (await registrations()).findOne({ email: exactIgnoreCase(email) });
+// Same WhatsApp number means the same person submitting again, however the number was typed (08…, 8…, 628…)
+export async function findExistingRegistration(whatsapp) {
+  const local = intlPhone(whatsapp).slice(2);
+  const doc = await (await registrations()).findOne({ whatsapp: { $in: [`0${local}`, local, `62${local}`] } });
   return doc ? toFrontend(doc) : null;
 }
 
@@ -90,12 +95,12 @@ export async function addRegistration(reg) {
     ticket_id: reg.ticketId,
     full_name: reg.fullName,
     gender: reg.gender,
-    email: reg.email,
+    status: reg.status,
     whatsapp: reg.whatsapp,
     region: reg.region,
     komsel_status: reg.komselStatus,
     mentor_name: reg.mentorName || '-',
-    faculty: reg.faculty || 'Universitas Gunadarma',
+    faculty: reg.faculty || '-',
     departure: reg.departure,
     departure_area: reg.departureArea,
     registered_at: formatRegistered(now),
@@ -127,10 +132,36 @@ export async function setCheckIn(ticketId, checkedIn) {
   return doc ? toFrontend(doc) : null;
 }
 
-// true when a registration was deleted
+// The deleted registration (so the audit log can name it), or null when there was none
 export async function deleteRegistration(ticketId) {
-  const { deletedCount } = await (await registrations()).deleteOne({ ticket_id: ticketId.trim().toUpperCase() });
-  return deletedCount > 0;
+  const doc = await (await registrations()).findOneAndDelete({ ticket_id: ticketId.trim().toUpperCase() });
+  return doc ? toFrontend(doc) : null;
+}
+
+// Audit log: who did what, when, from where: { at, user, action, entity: 'pengguna' | 'peserta', detail, ip }
+const auditLogs = async () => (await getDb()).collection('audit_logs');
+
+// Never fails the action it records: a lost log line beats a door check-in that errors
+export async function addAuditLog(entry) {
+  try {
+    await (await auditLogs()).insertOne({ ...entry, at: new Date() });
+  } catch (err) {
+    console.error('[Audit] not saved:', err);
+  }
+}
+
+// ponytail: newest 2000 only, filtered in the browser; page through the database if one event ever logs more
+export async function listAuditLogs() {
+  const docs = await (await auditLogs()).find().sort({ at: -1 }).limit(2000).toArray();
+  return docs.map((d) => ({
+    id: String(d._id),
+    at: d.at.toISOString(),
+    user: d.user,
+    action: d.action,
+    entity: d.entity,
+    detail: d.detail || '',
+    ip: d.ip || '',
+  }));
 }
 
 export async function countRegistrations() {

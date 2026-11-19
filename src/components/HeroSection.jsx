@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Calendar, Clock, MapPin } from 'lucide-react';
+import { Calendar, Clock, MapPin } from 'lucide-react';
 import ChristmasStar from './ChristmasStar';
 import TreeSilhouette from './TreeSilhouette';
 import { EVENT } from '../utils/event';
@@ -153,7 +153,7 @@ export default function HeroSection({ onStartRegistration }) {
             &ldquo;{EVENT.theme}&rdquo;
           </p>
           <p className="text-[11px] sm:text-xs text-gray-300/90 font-light mt-2 leading-relaxed">
-            &ldquo;{EVENT.verse}&rdquo; — <span className="text-rose-300 font-medium">{EVENT.verseRef}</span>
+            &ldquo;{EVENT.verse}&rdquo; — <span className="text-gold-gradient font-semibold">{EVENT.verseRef}</span>
           </p>
         </motion.div>
 
@@ -173,7 +173,6 @@ export default function HeroSection({ onStartRegistration }) {
             type="button"
             className="gold-btn group w-full max-w-xs sm:max-w-none sm:w-auto px-7 sm:px-11 py-3.5 sm:py-4.5 rounded-full font-sans font-semibold text-neutral-950 text-xs sm:text-base tracking-widest uppercase cursor-pointer flex items-center justify-center gap-2.5 sm:gap-3 shadow-[0_0_30px_rgba(245,208,97,0.45)] hover:shadow-[0_0_50px_rgba(245,208,97,0.8)]"
           >
-            <Sparkles className="w-4 h-4 text-amber-950 transition-transform group-hover:rotate-45 shrink-0" />
             <span>MULAI REGISTRASI</span>
             <span className="w-2 h-2 rounded-full bg-amber-950/70 group-hover:scale-150 transition-transform shrink-0" />
           </button>

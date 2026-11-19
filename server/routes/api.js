@@ -2,8 +2,17 @@ import crypto from 'node:crypto';
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import QRCode from 'qrcode';
-import { REGIONS, regionName } from '../../src/utils/regions.js';
-import { EVENT, GENDERS, DEPARTURES, MEETING_POINTS, KOMSEL_OPTIONS } from '../../src/utils/event.js';
+import { CAMPUS_REGIONS, regionName } from '../../src/utils/regions.js';
+import {
+  EVENT,
+  GENDERS,
+  STATUSES,
+  STUDENT_STATUS,
+  DEPARTURES,
+  MEETING_POINTS,
+  KOMSEL_OPTIONS,
+  WHATSAPP_GROUP_URL,
+} from '../../src/utils/event.js';
 import { intlPhone } from '../../src/utils/phone.js';
 import {
   listRegistrations,
@@ -23,6 +32,8 @@ import {
   countAttempt,
   attempts,
   clearAttempts,
+  addAuditLog,
+  listAuditLogs,
 } from '../db.js';
 
 const router = express.Router();
@@ -31,6 +42,10 @@ const str = (v) => (typeof v === 'string' ? v.trim() : '');
 
 // Vercel sets x-real-ip to the visitor's address (and overwrites anything the visitor sends); locally it is absent
 const clientIp = (req) => req.get('x-real-ip') || req.socket.remoteAddress;
+
+// One audit log line for an action a panitia account took (or tried, for a failed login)
+const audit = (req, user, action, entity, detail = '') =>
+  addAuditLog({ user, action, entity, detail, ip: clientIp(req) });
 
 // ==========================================
 // 0. ADMIN TOKEN (HMAC-signed, stateless for serverless)
@@ -133,7 +148,7 @@ function whatsappLink(r, siteUrl) {
     `📌 *DETAIL E-TICKET ANDA:*\n` +
     `• Kode Tiket: *${r.ticketId}*\n` +
     `• Jenis Kelamin: *${r.gender}*\n` +
-    `• Email: *${r.email}*\n` +
+    `• Status: *${r.status}*\n` +
     `• Region Kampus: *${regionName(r.region)}*\n` +
     `• Kakak Komsel: *${r.mentorName}*\n` +
     `• Jurusan: *${r.faculty}*\n` +
@@ -141,6 +156,7 @@ function whatsappLink(r, siteUrl) {
     (MEETING_POINTS[r.departureArea]
       ? `🚌 *TITIK KUMPUL KEBERANGKATAN ${r.departureArea.toUpperCase()}:*\n${MEETING_POINTS[r.departureArea]}\n\n`
       : '') +
+    (WHATSAPP_GROUP_URL ? `👥 *GABUNG GRUP WHATSAPP PESERTA:*\n${WHATSAPP_GROUP_URL}\n\n` : '') +
     `🔳 *QR CHECK-IN* (buka & tunjukkan di pintu masuk):\n` +
     `${siteUrl}/api/tickets/${encodeURIComponent(r.ticketId)}/qr.png\n\n` +
     `🗓️ *WAKTU & TEMPAT:*\n` +
@@ -172,11 +188,12 @@ router.post('/register', async (req, res) => {
   const departure = str(body.departure);
   // Only "Bersama" picks a meeting point; "Pribadi" is always '-'
   const departureArea = departure === 'Bersama' ? str(body.departureArea) : '-';
-  const email = str(body.email);
+  const status = str(body.status);
   const whatsapp = str(body.whatsapp).replace(/\D/g, '');
-  const region = str(body.region).toLowerCase();
+  // Only Gunadarma students pick a campus region; everyone else is '-'
+  const region = status === STUDENT_STATUS ? str(body.region).toLowerCase() : '-';
   const komselStatus = str(body.komselStatus);
-  const faculty = str(body.faculty) || 'Universitas Gunadarma';
+  const faculty = str(body.faculty) || '-';
 
   const fail = (message) => res.status(422).json({ success: false, message });
 
@@ -187,31 +204,29 @@ router.post('/register', async (req, res) => {
   // Validation rules
   if (!fullName) return fail('Nama lengkap wajib diisi.');
   if (!GENDERS.includes(gender)) return fail('Pilih jenis kelamin.');
-  if (!REGIONS.some((r) => r.id === region)) return fail('Pilih region kampus.');
   if (!KOMSEL_OPTIONS.includes(komselStatus)) return fail('Pilih status Komsel.');
   if (!DEPARTURES.includes(departure)) return fail('Pilih opsi keberangkatan (Pribadi / Bersama).');
   if (departure === 'Bersama' && !MEETING_POINTS[departureArea]) return fail('Pilih area keberangkatan.');
-  if (!email) return fail('Email wajib diisi.');
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return fail('Format email tidak valid. Contoh: nama@gmail.com');
-  }
+  if (!STATUSES.includes(status)) return fail('Pilih status.');
+  if (status === STUDENT_STATUS && !CAMPUS_REGIONS.some((r) => r.id === region)) return fail('Pilih region kampus.');
   if (!whatsapp) return fail('Nomor WhatsApp wajib diisi.');
   if (whatsapp.length < 9 || whatsapp.length > 13) {
     return fail('Nomor WhatsApp harus terdiri dari 9 hingga 13 digit angka.');
   }
 
-  const textFields = [fullName, email, str(body.mentorName), faculty];
+  const textFields = [fullName, str(body.mentorName), faculty];
   if (textFields.some((v) => v.length > 150)) return fail('Isian terlalu panjang (maksimal 150 karakter).');
 
   // ponytail: check-then-insert; two submits in the same instant can still both insert. Fine with the
-  // submit button disabled while sending; add a unique email index if duplicates still show up.
-  const existing = await findExistingRegistration(email);
+  // submit button disabled while sending; add a unique whatsapp index if duplicates still show up.
+  const existing = await findExistingRegistration(whatsapp);
   if (existing) {
-    // An email is not secret: only hand back the ticket (and phone number) to someone who also knows the phone
-    if (intlPhone(existing.whatsapp) !== intlPhone(whatsapp)) {
+    // A phone number is not secret: only hand back the ticket to someone who also types the same name
+    const sameName = (a, b) => a.toLowerCase().replace(/\s+/g, ' ') === b.toLowerCase().replace(/\s+/g, ' ');
+    if (!sameName(existing.fullName, fullName)) {
       return res.status(409).json({
         success: false,
-        message: 'Email ini sudah terdaftar dengan nomor WhatsApp lain. Hubungi panitia.',
+        message: 'Nomor WhatsApp ini sudah terdaftar atas nama lain. Hubungi panitia.',
       });
     }
     return res.json({
@@ -235,7 +250,7 @@ router.post('/register', async (req, res) => {
     ticketId,
     fullName,
     gender,
-    email,
+    status,
     whatsapp,
     region,
     komselStatus,
@@ -266,6 +281,7 @@ router.patch('/registrations/:ticketId/checkin', sekretariatOnly, async (req, re
   if (!item) {
     return res.status(404).json({ success: false, message: 'Tiket tidak ditemukan' });
   }
+  await audit(req, req.user.name, checkedIn ? 'CHECK-IN' : 'BATAL CHECK-IN', 'peserta', `${item.ticketId} — ${item.fullName}`);
 
   res.json({
     success: true,
@@ -276,9 +292,11 @@ router.patch('/registrations/:ticketId/checkin', sekretariatOnly, async (req, re
 
 // DELETE /api/registrations/:ticketId
 router.delete('/registrations/:ticketId', sekretariatOnly, async (req, res) => {
-  if (!(await deleteRegistration(req.params.ticketId))) {
+  const gone = await deleteRegistration(req.params.ticketId);
+  if (!gone) {
     return res.status(404).json({ success: false, message: 'Data registrasi tidak ditemukan' });
   }
+  await audit(req, req.user.name, 'HAPUS', 'peserta', `${gone.ticketId} — ${gone.fullName}`);
 
   res.json({ success: true, message: 'Data registrasi berhasil dihapus.' });
 });
@@ -298,6 +316,11 @@ router.post('/admin/login', async (req, res) => {
 
   const login = str(req.body?.username).toLowerCase();
   const password = str(req.body?.password);
+  // Usernames are at most 40 characters and emails 150; longer is refused before it becomes a stored counter key,
+  // so nobody can fill the database with huge made-up usernames
+  if (login.length > 150) {
+    return res.status(401).json({ success: false, message: 'Username atau kata sandi salah. Silakan coba lagi.' });
+  }
 
   // Per network AND username: guessing is slowed down, but nobody elsewhere can lock out the real panitia
   const attemptKey = `login:${clientIp(req)}:${login}`;
@@ -315,6 +338,7 @@ router.post('/admin/login', async (req, res) => {
       return res.status(403).json({ success: false, message: 'Akun ini belum punya peran. Hubungi admin.' });
     }
     await clearAttempts(attemptKey);
+    await audit(req, user.name, 'LOGIN', 'pengguna');
     return res.json({
       success: true,
       message: 'Login berhasil',
@@ -323,6 +347,8 @@ router.post('/admin/login', async (req, res) => {
     });
   }
 
+  // Only for real accounts: guesses at made-up names would just flood the log
+  if (user) await audit(req, user.name, 'LOGIN GAGAL', 'pengguna');
   if ((await countAttempt(attemptKey, LOGIN_MAX_FAILS, LOGIN_BLOCK_MS)) >= LOGIN_MAX_FAILS) return blocked();
   return res.status(401).json({
     success: false,
@@ -349,8 +375,20 @@ router.post('/me/password', anyRole, async (req, res) => {
     password: await bcrypt.hash(next, 12),
     password_changed_at: new Date(),
   });
+  await audit(req, req.user.name, 'GANTI PASSWORD', 'pengguna');
   // Other sessions of this account end now; this one continues with a fresh token
   res.json({ success: true, message: 'Password berhasil diganti.', token: issueToken(req.user) });
+});
+
+// POST /api/logout - only records the logout: tokens are stateless, the browser forgets its own
+router.post('/logout', anyRole, async (req, res) => {
+  await audit(req, req.user.name, 'LOGOUT', 'pengguna');
+  res.json({ success: true });
+});
+
+// GET /api/audit-logs - newest first (admin)
+router.get('/audit-logs', adminOnly, async (req, res) => {
+  res.json({ success: true, data: await listAuditLogs() });
 });
 
 // ==========================================
@@ -389,6 +427,7 @@ router.post('/users', adminOnly, async (req, res) => {
   if (await userConflict(input.fields)) return res.status(409).json({ success: false, message: conflictMessage });
 
   const user = await createUser({ ...input.fields, passwordHash: await bcrypt.hash(input.password, 12) });
+  await audit(req, req.user.name, 'TAMBAH', 'pengguna', `${user.name} (${user.role})`);
   res.status(201).json({ success: true, message: `Akun ${user.name} dibuat.`, data: user });
 });
 
@@ -413,6 +452,7 @@ router.patch('/users/:id', adminOnly, async (req, res) => {
     if (target.id !== String(req.user._id)) fields.password_changed_at = new Date();
   }
   const user = await updateUser(target.id, fields);
+  await audit(req, req.user.name, 'UBAH', 'pengguna', `${user.name} (${user.role})${input.password ? ', password direset' : ''}`);
   res.json({ success: true, message: `Akun ${user.name} diperbarui.`, data: user });
 });
 
@@ -425,6 +465,7 @@ router.delete('/users/:id', adminOnly, async (req, res) => {
   }
 
   await deleteUser(target.id);
+  await audit(req, req.user.name, 'HAPUS', 'pengguna', target.name);
   res.json({ success: true, message: `Akun ${target.name} dihapus.` });
 });
 

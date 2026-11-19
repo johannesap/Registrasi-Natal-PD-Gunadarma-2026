@@ -7,7 +7,7 @@ export default function TreeSilhouette() {
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 0.85, y: 0 }}
       transition={{ duration: 3, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
-      className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-80 sm:h-96 pointer-events-none select-none -z-10 flex items-end justify-center overflow-hidden"
+      className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-80 sm:h-96 pointer-events-none select-none -z-10 flex items-end justify-center overflow-hidden"
     >
       {/* Ambient Forest Mist & Emerald Glow */}
       <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-[#06140f] via-[#1a4d3e]/30 to-transparent" />
