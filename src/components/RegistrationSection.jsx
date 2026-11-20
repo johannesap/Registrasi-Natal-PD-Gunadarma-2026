@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { addRegistration } from '../utils/storage';
+import { downloadTicketJpg } from '../utils/ticketImage';
 import { CAMPUS_REGIONS, regionName as getRegionName } from '../utils/regions';
 import {
   EVENT,
@@ -79,8 +80,9 @@ function ChoicePills({ legend, name, options, value, onChange, icons = {} }) {
   );
 }
 
-// The e-ticket card: live preview of the form, and the printed ticket once ticketId is known
-function TicketCard({ p, ticketId }) {
+// Live preview of the e-ticket while filling in the form. The issued ticket (code, QR, meeting point) is drawn
+// by utils/ticketImage.js for "Simpan Tiket (JPG)": keep the two looking alike.
+function TicketCard({ p }) {
   return (
     <div className="relative rounded-2xl overflow-hidden border border-amber-400/30 bg-gradient-to-b from-[#1a4d3e] via-[#0f2e25] to-[#5c1515] p-4 sm:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-xl">
       {/* Gold foil ribbon border top */}
@@ -193,12 +195,6 @@ function TicketCard({ p, ticketId }) {
             <span className="text-gray-200">{p.departureArea || '-'}</span>
           </div>
         </div>
-        {/* The issued (printed) ticket carries the meeting-point address too */}
-        {ticketId && MEETING_POINTS[p.departureArea] && (
-          <p className="text-[10px] text-gray-300 leading-snug">
-            <span className="text-amber-300 font-semibold">Titik kumpul:</span> {MEETING_POINTS[p.departureArea]}
-          </p>
-        )}
 
         {/* Event Schedule Info */}
         <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1 mt-2">
@@ -219,29 +215,17 @@ function TicketCard({ p, ticketId }) {
 
       {/* Barcode & Pass ID Footer */}
       <div className="mt-4 pt-3.5 border-t border-dashed border-white/20 flex items-center justify-between">
-        {ticketId ? (
-          <div>
-            <span className="text-[9px] uppercase tracking-widest text-amber-300 block">
-              Kode Tiket Resmi
-            </span>
-            <span className="text-sm font-mono font-bold text-amber-300">{ticketId}</span>
-          </div>
-        ) : (
-          <div>
-            <span className="text-[9px] uppercase tracking-widest text-amber-300 block">
-              Status Pass
-            </span>
-            <span className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-              READY TO ISSUE
-            </span>
-          </div>
-        )}
+        <div>
+          <span className="text-[9px] uppercase tracking-widest text-amber-300 block">
+            Status Pass
+          </span>
+          <span className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+            READY TO ISSUE
+          </span>
+        </div>
 
-        {ticketId ? (
-          <TicketQR ticketId={ticketId} className="w-24 h-24" />
-        ) : (
-        /* Stylized Barcode SVG */
+        {/* Stylized Barcode SVG */}
         <div className="flex items-center gap-0.5 opacity-80 h-7">
           {[2, 4, 1, 3, 2, 5, 2, 1, 4, 2, 3, 1, 5, 2, 3, 2].map((w, i) => (
             <div
@@ -251,7 +235,6 @@ function TicketCard({ p, ticketId }) {
             />
           ))}
         </div>
-        )}
       </div>
     </div>
   );
@@ -357,8 +340,17 @@ export default function RegistrationSection() {
     }
   };
 
-  const handlePrint = () => {
-    window.print();
+  const [isSavingTicket, setIsSavingTicket] = useState(false);
+  const handleSaveTicket = async () => {
+    setIsSavingTicket(true);
+    try {
+      await downloadTicketJpg(registered);
+    } catch (err) {
+      console.error(err);
+      window.alert('Tiket gagal disimpan sebagai gambar. Silakan screenshot halaman ini.');
+    } finally {
+      setIsSavingTicket(false);
+    }
   };
 
   const isBelumPunya = formData.komselStatus.includes('Belum memiliki Komsel');
@@ -779,18 +771,14 @@ export default function RegistrationSection() {
       {createPortal(
       <AnimatePresence>
         {registered && (
-          <div className="print-ticket fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
-            {/* Paper version: the same card as the live preview, now with the ticket code */}
-            <div className="hidden print:block w-[460px] mx-auto">
-              <TicketCard p={registered} ticketId={registered.ticketId} />
-            </div>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
 
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="print:hidden glass-panel max-w-lg w-full max-h-[92vh] overflow-y-auto rounded-2xl p-4 sm:p-7 md:p-8 text-center relative border border-amber-400/40 shadow-[0_0_60px_rgba(245,208,97,0.3)] my-auto"
+              className="glass-panel max-w-lg w-full max-h-[92vh] overflow-y-auto rounded-2xl p-4 sm:p-7 md:p-8 text-center relative border border-amber-400/40 shadow-[0_0_60px_rgba(245,208,97,0.3)] my-auto"
             >
               {/* Close Button */}
               <button
@@ -827,7 +815,7 @@ export default function RegistrationSection() {
                 </div>
                 <p>
                   Tekan tombol hijau di bawah untuk membuka WhatsApp, lalu kirim pesan tiket itu ke nomor Anda sendiri.
-                  Anda juga bisa mencetak atau screenshot halaman ini. Tunjukkan QR Code di bawah di pintu masuk.
+                  Anda juga bisa menyimpan tiket sebagai gambar (JPG) atau screenshot halaman ini. Tunjukkan QR Code di bawah di pintu masuk.
                 </p>
               </div>
 
@@ -921,12 +909,13 @@ export default function RegistrationSection() {
 
                 <div className="flex flex-col sm:flex-row gap-2.5">
                   <button
-                    onClick={handlePrint}
+                    onClick={handleSaveTicket}
                     type="button"
+                    disabled={isSavingTicket}
                     className="gold-btn flex-1 py-2.5 rounded-xl font-semibold text-neutral-950 text-xs tracking-wider uppercase flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <Download className="w-3.5 h-3.5" />
-                    <span>Cetak / Simpan Tiket</span>
+                    <span>{isSavingTicket ? 'Menyimpan...' : 'Simpan Tiket (JPG)'}</span>
                   </button>
                   <button
                     onClick={() => setRegistered(null)}
