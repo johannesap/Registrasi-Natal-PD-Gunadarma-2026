@@ -10,14 +10,29 @@ try {
   // storage blocked: nothing to clean
 }
 
+// The panitia's session token. Browsers that refuse site storage (blocked cookies/site data, some embedded or
+// in-app browsers) still get a session: it is kept in memory and ends when the page is reloaded.
+let memoryToken = null;
+const readToken = () => {
+  try {
+    return localStorage.getItem(AUTH_TOKEN_KEY);
+  } catch {
+    return memoryToken;
+  }
+};
+const writeToken = (token) => {
+  memoryToken = token;
+  try {
+    if (token) localStorage.setItem(AUTH_TOKEN_KEY, token);
+    else localStorage.removeItem(AUTH_TOKEN_KEY);
+  } catch {
+    // storage blocked: the memory copy above is the session
+  }
+};
+
 // Calls the API with the admin token and throws the server's message on any failure
 const apiFetch = async (path, { method = 'GET', body } = {}) => {
-  let token = null;
-  try {
-    token = localStorage.getItem(AUTH_TOKEN_KEY);
-  } catch {
-    // storage blocked: continue without token
-  }
+  const token = readToken();
 
   let res;
   try {
@@ -81,7 +96,7 @@ export const deleteRegistration = async (ticketId) => {
 // Role from the token ('admin' | 'sekretariat'), only to pick the screen; the server checks it on every request
 export const currentRole = () => {
   try {
-    const payload = localStorage.getItem(AUTH_TOKEN_KEY).split('.')[0];
+    const payload = readToken().split('.')[0];
     return JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/'))).r || null;
   } catch {
     return null;
@@ -94,7 +109,7 @@ export const isAdminAuthenticated = () => Boolean(currentRole());
 // Change your own password; the server ends other sessions and returns a fresh token for this one
 export const changePassword = async (currentPassword, newPassword) => {
   const result = await apiFetch('/me/password', { method: 'POST', body: { currentPassword, newPassword } });
-  localStorage.setItem(AUTH_TOKEN_KEY, result.token);
+  writeToken(result.token);
   return result.message;
 };
 
@@ -116,7 +131,7 @@ export const loginAdmin = async (username, password) => {
       method: 'POST',
       body: { username: (username || '').trim().toLowerCase(), password: (password || '').trim() },
     });
-    localStorage.setItem(AUTH_TOKEN_KEY, data.token);
+    writeToken(data.token);
     return { success: true };
   } catch (err) {
     return { success: false, message: err.message };
@@ -126,9 +141,5 @@ export const loginAdmin = async (username, password) => {
 // Records the logout on the server (audit log), then forgets the token; logging out works even if that call fails
 export const logoutAdmin = () => {
   apiFetch('/logout', { method: 'POST' }).catch(() => {}); // reads the token before the line below removes it
-  try {
-    localStorage.removeItem(AUTH_TOKEN_KEY);
-  } catch (error) {
-    console.error(error);
-  }
+  writeToken(null);
 };
