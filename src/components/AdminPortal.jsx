@@ -28,6 +28,7 @@ import {
   fetchRegistrations,
   deleteRegistration,
   setCheckIn,
+  setBusAttendance,
   isAdminAuthenticated,
   currentRole,
   loginAdmin,
@@ -136,6 +137,16 @@ export default function AdminPortal({ onBackToHome }) {
   };
 
   // Sends the wanted state, not "flip", so a double tap cannot undo a check-in
+  // Bus attendance on Data Bus, apart from the door check-in; sends the wanted state, not "flip"
+  const handleSetBus = async (row, leg) => {
+    try {
+      const updated = await setBusAttendance(row.ticketId, leg, !(leg === 'berangkat' ? row.busDeparted : row.busReturned));
+      setRegistrations((list) => list.map((r) => (r.ticketId === updated.ticketId ? updated : r)));
+    } catch (err) {
+      handleActionError(err);
+    }
+  };
+
   const handleToggleCheckIn = async (row) => {
     try {
       await saveCheckIn(row.ticketId, !row.isCheckedIn);
@@ -403,7 +414,7 @@ export default function AdminPortal({ onBackToHome }) {
         <div className="flex-1 min-w-0 px-3 sm:px-6 lg:px-8 py-6 sm:py-10">
           <div className="max-w-7xl mx-auto space-y-6">
           {view === 'bus' ? (
-            <BusData registrations={registrations} />
+            <BusData registrations={registrations} onSetBus={handleSetBus} />
           ) : (
             <>
         {/* Top Header Bar */}
@@ -663,6 +674,7 @@ export default function AdminPortal({ onBackToHome }) {
                     <th className="py-3.5 px-4 font-semibold">Nama & Keberangkatan</th>
                     <th className="hidden md:table-cell py-3.5 px-4 font-semibold">Kontak</th>
                     <th className="hidden md:table-cell py-3.5 px-4 font-semibold">Region & Jurusan</th>
+                    <th className="hidden md:table-cell py-3.5 px-4 font-semibold text-center">Angkatan</th>
                     <th className="hidden md:table-cell py-3.5 px-4 font-semibold">Kakak Komsel</th>
                     <th className="py-3.5 px-4 font-semibold text-center">Presensi</th>
                     <th className="py-3.5 px-4 font-semibold text-right">Aksi</th>
@@ -685,6 +697,10 @@ export default function AdminPortal({ onBackToHome }) {
                           {row.departureArea !== '-' && ` (${row.departureArea})`}
                         </div>
                         <div className="md:hidden text-[11px] font-mono text-amber-300">{row.ticketId}</div>
+                        {/* On phones the Angkatan column is hidden, so it sits under the name */}
+                        {row.angkatan !== '-' && (
+                          <div className="md:hidden text-[11px] text-gray-400">Angkatan {row.angkatan}</div>
+                        )}
                       </td>
                       <td className="hidden md:table-cell py-3.5 px-4 space-y-0.5">
                         <div className="flex items-center gap-1.5 text-gray-300">
@@ -711,6 +727,7 @@ export default function AdminPortal({ onBackToHome }) {
                           {row.faculty || '-'}
                         </div>
                       </td>
+                      <td className="hidden md:table-cell py-3.5 px-4 text-center font-mono text-gray-200">{row.angkatan}</td>
                       <td className="hidden md:table-cell py-3.5 px-4">
                         {row.komselStatus?.includes('Belum memiliki') ? (
                           <span className="text-amber-300/80 italic text-[11px]">
@@ -865,8 +882,11 @@ export default function AdminPortal({ onBackToHome }) {
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <span className="text-[10px] text-gray-400 uppercase block">Jurusan</span>
-                    <span className="text-white">{selectedParticipant.faculty || '-'}</span>
+                    <span className="text-[10px] text-gray-400 uppercase block">Jurusan / Angkatan</span>
+                    <span className="text-white">
+                      {selectedParticipant.faculty || '-'}
+                      {selectedParticipant.angkatan !== '-' && ` / ${selectedParticipant.angkatan}`}
+                    </span>
                   </div>
                   <div>
                     <span className="text-[10px] text-gray-400 uppercase block">Keberangkatan</span>

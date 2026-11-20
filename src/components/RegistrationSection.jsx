@@ -33,6 +33,7 @@ import {
   GENDERS,
   STATUSES,
   STUDENT_STATUS,
+  ANGKATAN,
   DEPARTURES,
   MEETING_POINTS,
   KOMSEL_OPTIONS,
@@ -247,6 +248,7 @@ export default function RegistrationSection() {
     status: '',
     whatsapp: '',
     region: '-',
+    angkatan: '-',
     komselStatus: KOMSEL_OPTIONS[0],
     mentorName: '',
     faculty: '',
@@ -263,11 +265,13 @@ export default function RegistrationSection() {
     const { name, value } = e.target;
 
     if (name === 'status') {
-      // Only Gunadarma students pick a campus region; everyone else is '-'
+      // Only Gunadarma students pick a campus region and angkatan; everyone else is '-'
+      const student = value === STUDENT_STATUS;
       setFormData((prev) => ({
         ...prev,
         status: value,
-        region: value === STUDENT_STATUS ? (prev.region === '-' ? '' : prev.region) : '-',
+        region: student ? (prev.region === '-' ? '' : prev.region) : '-',
+        angkatan: student ? (prev.angkatan === '-' ? '' : prev.angkatan) : '-',
       }));
       return;
     }
@@ -312,6 +316,7 @@ export default function RegistrationSection() {
         status: formData.status,
         whatsapp: formData.whatsapp.trim(),
         region: formData.region,
+        angkatan: formData.angkatan,
         komselStatus: formData.komselStatus,
         mentorName: isBelumPunya ? '-' : (formData.mentorName || '-'),
         faculty: formData.faculty.trim(),
@@ -518,6 +523,40 @@ export default function RegistrationSection() {
                   </div>
                 </div>
               </div>
+
+              {/* Field: Angkatan, only for Gunadarma students */}
+              {isStudent && (
+                <div>
+                  <label htmlFor="reg-angkatan" className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5 sm:mb-2">
+                    Angkatan <span className="text-rose-400">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                      <Calendar className="w-4 h-4 text-amber-300/70" />
+                    </div>
+                    <select
+                      id="reg-angkatan"
+                      name="angkatan"
+                      required
+                      value={formData.angkatan}
+                      onChange={handleChange}
+                      className="w-full pl-10 pr-10 py-3 bg-neutral-900/80 border border-white/10 rounded-xl text-base sm:text-sm text-gray-100 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all appearance-none cursor-pointer"
+                    >
+                      <option value="" disabled className="bg-neutral-900 text-gray-400">
+                        Pilih angkatan
+                      </option>
+                      {ANGKATAN.map((year) => (
+                        <option key={year} value={year} className="bg-neutral-900 text-gray-100">
+                          {year}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-gray-400">
+                      <span className="text-xs">▼</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Field: Nomor WhatsApp */}

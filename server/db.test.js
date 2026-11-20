@@ -19,6 +19,7 @@ const person = {
   status: 'Mahasiswa Gunadarma',
   whatsapp: '081299990001',
   region: 'depok',
+  angkatan: '2024',
   komselStatus: 'Sudah memiliki Komsel (Tuliskan nama Kakak Komsel di bawah)',
   departure: 'Bersama',
   departureArea: 'Depok',
@@ -93,6 +94,7 @@ test('registering again with the same phone and name returns the same ticket', {
   ticketId = first.data.ticketId;
   assert.match(ticketId, /^NATAL-UG-\d{4}-0001$/, 'suffix is the last 4 digits of the phone');
   assert.equal(first.data.departureArea, 'Depok');
+  assert.equal(first.data.angkatan, '2024');
 
   // Name in other letter case and phone written as 62…: still the same person
   const again = await (
@@ -124,16 +126,19 @@ test('Pribadi always stores area "-"; Bersama needs a known area', { skip }, asy
     { komselStatus: 'apa saja' },
     { komselStatus: 'Alumni / Pengurus' },
     { region: 'alumni_tamu' },
+    { angkatan: '2018' },
+    { angkatan: '' },
     { status: 'Dosen' },
   ]) {
     assert.equal((await register({ ...person, whatsapp: '081299990003', ...bad })).status, 422, JSON.stringify(bad));
   }
 });
 
-test('only Gunadarma students keep a campus region; other statuses store "-"', { skip }, async () => {
+test('only Gunadarma students keep a campus region and angkatan; other statuses store "-"', { skip }, async () => {
   const body = await (await register({ ...person, whatsapp: '081299990004', status: 'Media Partner', region: 'depok' })).json();
   await deleteRegistration(body.data.ticketId);
   assert.equal(body.data.region, '-');
+  assert.equal(body.data.angkatan, '-');
 });
 
 test('more than 20 registrations a minute from one network get 429', { skip }, async () => {
@@ -215,6 +220,28 @@ test('the audit log records logins and check-ins; only admin can read it', { ski
   assert.ok(checkIn.detail.startsWith(ticketId), 'names the ticket');
   // The login helper sends the network address as x-real-ip, the way Vercel does
   assert.equal(logs.find((l) => l.user === 'tes-sek' && l.action === 'LOGIN').ip, TEST_IP);
+});
+
+test('bus attendance (berangkat, pulang) is ticked by hand, apart from the door check-in', { skip }, async () => {
+  const sek = await loginToken('tes-sek');
+  const bus = (body, id = ticketId, token = sek) => authed(`/registrations/${id}/bus`, token, 'PATCH', body);
+  await authed(`/registrations/${ticketId}/checkin`, sek, 'PATCH', { checkedIn: false });
+
+  const went = (await (await bus({ leg: 'berangkat', value: true })).json()).data;
+  assert.equal(went.busDeparted, true);
+  assert.equal(went.busReturned, false);
+  assert.equal(went.isCheckedIn, false, 'the door check-in stays as it was');
+  assert.equal((await (await bus({ leg: 'pulang', value: true })).json()).data.busReturned, true);
+  assert.equal((await (await bus({ leg: 'berangkat', value: false })).json()).data.busDeparted, false);
+
+  assert.equal((await bus({ leg: 'naik', value: true })).status, 422);
+  assert.equal((await bus({ leg: 'berangkat', value: 'ya' })).status, 422);
+  assert.equal((await bus({ leg: 'berangkat', value: true }, ticketId, await loginToken('tes-adm'))).status, 403);
+
+  const pribadi = (await (await register({ ...person, whatsapp: '081299990006', departure: 'Pribadi' })).json()).data;
+  const status = (await bus({ leg: 'berangkat', value: true }, pribadi.ticketId)).status;
+  await deleteRegistration(pribadi.ticketId);
+  assert.equal(status, 404, 'Pribadi participants do not ride the bus');
 });
 
 test('admin creates, edits and deletes accounts; changes apply at once', { skip }, async () => {

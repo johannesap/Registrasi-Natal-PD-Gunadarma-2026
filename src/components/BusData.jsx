@@ -5,8 +5,9 @@ import { intlPhone } from '../utils/phone';
 
 const AREAS = Object.keys(MEETING_POINTS);
 
-// Participants who depart together ("Bersama"), one list per meeting point
-export default function BusData({ registrations }) {
+// Participants who depart together ("Bersama"), one list per meeting point. Berangkat and Pulang are ticked by
+// hand here (onSetBus(row, leg)), separate from the door check-in on Data Peserta.
+export default function BusData({ registrations, onSetBus }) {
   const [area, setArea] = useState(AREAS[0]);
   const riders = registrations.filter((r) => r.departure === 'Bersama');
   const inArea = riders.filter((r) => r.departureArea === area);
@@ -56,6 +57,11 @@ export default function BusData({ registrations }) {
             <MapPin className="w-3.5 h-3.5 text-amber-300 shrink-0 mt-0.5" />
             <span>{MEETING_POINTS[area]}</span>
           </p>
+          <p className="text-[11px] text-gray-300 mt-2">
+            Berangkat <strong className="text-emerald-300">{inArea.filter((r) => r.busDeparted).length}</strong>/{inArea.length}
+            {' • '}
+            Pulang <strong className="text-emerald-300">{inArea.filter((r) => r.busReturned).length}</strong>/{inArea.length}
+          </p>
         </div>
 
         {inArea.length === 0 ? (
@@ -65,21 +71,37 @@ export default function BusData({ registrations }) {
             <table className="w-full text-left text-xs">
               <thead className="bg-black/60 text-amber-200 border-b border-white/10 uppercase tracking-wider text-[10px]">
                 <tr>
-                  <th className="py-3.5 px-4 font-semibold">No</th>
+                  <th className="hidden sm:table-cell py-3.5 px-4 font-semibold">No</th>
                   <th className="py-3.5 px-4 font-semibold">Nama</th>
-                  <th className="py-3.5 px-4 font-semibold">WhatsApp</th>
-                  <th className="py-3.5 px-4 font-semibold text-center">Presensi</th>
+                  <th className="hidden sm:table-cell py-3.5 px-4 font-semibold text-center">Angkatan</th>
+                  <th className="hidden sm:table-cell py-3.5 px-4 font-semibold">WhatsApp</th>
+                  <th className="py-3.5 px-3 font-semibold text-center">Berangkat</th>
+                  <th className="py-3.5 px-3 font-semibold text-center">Pulang</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5 text-gray-200">
                 {inArea.map((r, idx) => (
                   <tr key={r.ticketId} className="hover:bg-white/[0.03]">
-                    <td className="py-3.5 px-4 text-gray-400 font-mono">{idx + 1}</td>
+                    <td className="hidden sm:table-cell py-3.5 px-4 text-gray-400 font-mono">{idx + 1}</td>
                     <td className="py-3.5 px-4">
                       <div className="font-semibold text-white">{r.fullName}</div>
-                      <div className="text-[11px] text-gray-400">{r.gender}</div>
+                      <div className="text-[11px] text-gray-400">
+                        {r.gender}
+                        {/* On phones the Angkatan column is hidden, so it sits here */}
+                        <span className="sm:hidden">{r.angkatan !== '-' && ` • Angkatan ${r.angkatan}`}</span>
+                      </div>
+                      {/* On phones the WhatsApp column is hidden, so the number sits under the name */}
+                      <a
+                        href={`https://wa.me/${intlPhone(r.whatsapp)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="sm:hidden text-[11px] text-emerald-300 hover:underline"
+                      >
+                        {r.whatsapp}
+                      </a>
                     </td>
-                    <td className="py-3.5 px-4">
+                    <td className="hidden sm:table-cell py-3.5 px-4 text-center font-mono text-gray-200">{r.angkatan}</td>
+                    <td className="hidden sm:table-cell py-3.5 px-4">
                       <a
                         href={`https://wa.me/${intlPhone(r.whatsapp)}`}
                         target="_blank"
@@ -90,17 +112,28 @@ export default function BusData({ registrations }) {
                         {r.whatsapp}
                       </a>
                     </td>
-                    <td className="py-3.5 px-4 text-center">
-                      {r.isCheckedIn ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-300">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Hadir
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-[11px] text-gray-400">
-                          <Clock className="w-3.5 h-3.5 text-gray-500" /> Belum Hadir
-                        </span>
-                      )}
-                    </td>
+                    {[
+                      ['berangkat', 'Berangkat', r.busDeparted],
+                      ['pulang', 'Pulang', r.busReturned],
+                    ].map(([leg, label, done]) => (
+                      <td key={leg} className="py-3.5 px-3 text-center">
+                        <button
+                          type="button"
+                          onClick={() => onSetBus(r, leg)}
+                          aria-pressed={done}
+                          aria-label={`${label} ${r.fullName}: ${done ? 'sudah' : 'belum'}`}
+                          title="Klik untuk mengubah"
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all cursor-pointer ${
+                            done
+                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 hover:bg-emerald-500/30'
+                              : 'bg-neutral-800 text-gray-400 border border-white/10 hover:border-amber-400/30 hover:text-amber-200'
+                          }`}
+                        >
+                          {done ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Clock className="w-3.5 h-3.5 text-gray-500" />}
+                          <span>{done ? 'Sudah' : 'Belum'}</span>
+                        </button>
+                      </td>
+                    ))}
                   </tr>
                 ))}
               </tbody>

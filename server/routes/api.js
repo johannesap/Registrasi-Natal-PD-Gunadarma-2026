@@ -8,6 +8,7 @@ import {
   GENDERS,
   STATUSES,
   STUDENT_STATUS,
+  ANGKATAN,
   DEPARTURES,
   MEETING_POINTS,
   KOMSEL_OPTIONS,
@@ -19,6 +20,7 @@ import {
   findExistingRegistration,
   addRegistration,
   setCheckIn,
+  setBusAttendance,
   deleteRegistration,
   countRegistrations,
   findAdminUser,
@@ -197,6 +199,7 @@ router.post('/register', async (req, res) => {
   const whatsapp = str(body.whatsapp).replace(/\D/g, '');
   // Only Gunadarma students pick a campus region; everyone else is '-'
   const region = status === STUDENT_STATUS ? str(body.region).toLowerCase() : '-';
+  const angkatan = status === STUDENT_STATUS ? str(body.angkatan) : '-';
   const komselStatus = str(body.komselStatus);
   const faculty = str(body.faculty) || '-';
 
@@ -214,6 +217,7 @@ router.post('/register', async (req, res) => {
   if (departure === 'Bersama' && !MEETING_POINTS[departureArea]) return fail('Pilih area keberangkatan.');
   if (!STATUSES.includes(status)) return fail('Pilih status.');
   if (status === STUDENT_STATUS && !CAMPUS_REGIONS.some((r) => r.id === region)) return fail('Pilih region kampus.');
+  if (status === STUDENT_STATUS && !ANGKATAN.includes(angkatan)) return fail('Pilih angkatan.');
   if (!whatsapp) return fail('Nomor WhatsApp wajib diisi.');
   if (whatsapp.length < 9 || whatsapp.length > 13) {
     return fail('Nomor WhatsApp harus terdiri dari 9 hingga 13 digit angka.');
@@ -258,6 +262,7 @@ router.post('/register', async (req, res) => {
     status,
     whatsapp,
     region,
+    angkatan,
     komselStatus,
     mentorName,
     faculty,
@@ -293,6 +298,24 @@ router.patch('/registrations/:ticketId/checkin', sekretariatOnly, async (req, re
     message: `Status kehadiran berhasil diubah menjadi: ${item.isCheckedIn ? 'Hadir' : 'Belum Hadir'}`,
     data: item,
   });
+});
+
+// PATCH /api/registrations/:ticketId/bus  body: { leg: 'berangkat' | 'pulang', value: true|false }
+// Bus attendance on Data Bus, ticked by hand per leg; never touches the door check-in
+router.patch('/registrations/:ticketId/bus', sekretariatOnly, async (req, res) => {
+  const { leg, value } = req.body || {};
+  if (!['berangkat', 'pulang'].includes(leg) || typeof value !== 'boolean') {
+    return res.status(422).json({ success: false, message: 'leg harus berangkat atau pulang, value true atau false.' });
+  }
+
+  const item = await setBusAttendance(req.params.ticketId, leg, value);
+  if (!item) {
+    return res.status(404).json({ success: false, message: 'Tiket tidak ditemukan atau peserta tidak naik bus.' });
+  }
+  const action = `${value ? '' : 'BATAL '}BUS ${leg.toUpperCase()}`;
+  await audit(req, req.user.name, action, 'peserta', `${item.ticketId} — ${item.fullName} (${item.departureArea})`);
+
+  res.json({ success: true, data: item });
 });
 
 // DELETE /api/registrations/:ticketId

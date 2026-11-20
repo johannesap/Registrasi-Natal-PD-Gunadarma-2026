@@ -65,6 +65,15 @@ export const setCheckIn = async (ticketId, checkedIn) =>
     })
   ).data;
 
+// Bus attendance on Data Bus: set leg ('berangkat' | 'pulang') to value and return the updated participant
+export const setBusAttendance = async (ticketId, leg, value) =>
+  (
+    await apiFetch(`/registrations/${encodeURIComponent(ticketId)}/bus`, {
+      method: 'PATCH',
+      body: { leg, value },
+    })
+  ).data;
+
 export const deleteRegistration = async (ticketId) => {
   await apiFetch(`/registrations/${encodeURIComponent(ticketId)}`, { method: 'DELETE' });
 };

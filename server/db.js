@@ -65,12 +65,16 @@ export function toFrontend(doc) {
     status: doc.status || '-',
     whatsapp: doc.whatsapp,
     region: doc.region,
+    angkatan: doc.angkatan || '-',
     komselStatus: doc.komsel_status,
     mentorName: doc.mentor_name || '-',
     faculty: doc.faculty || '-',
     departure: doc.departure || '-',
     departureArea: doc.departure_area || '-',
     isCheckedIn: Boolean(doc.is_checked_in),
+    // Bus attendance, ticked by hand on Data Bus; separate from the door check-in above
+    busDeparted: Boolean(doc.bus_departed),
+    busReturned: Boolean(doc.bus_returned),
     checkedInAt: doc.checked_in_at ? formatCheckedIn(doc.checked_in_at) : null,
     registeredAt: doc.registered_at || (doc.created_at ? formatRegistered(doc.created_at) : null),
   };
@@ -98,6 +102,7 @@ export async function addRegistration(reg) {
     status: reg.status,
     whatsapp: reg.whatsapp,
     region: reg.region,
+    angkatan: reg.angkatan,
     komsel_status: reg.komselStatus,
     mentor_name: reg.mentorName || '-',
     faculty: reg.faculty || '-',
@@ -127,6 +132,17 @@ export async function setCheckIn(ticketId, checkedIn) {
         },
       },
     ],
+    { returnDocument: 'after' }
+  );
+  return doc ? toFrontend(doc) : null;
+}
+
+// Sets (not flips) one bus leg ('berangkat' | 'pulang'); null when the ticket is unknown or does not ride the bus
+export async function setBusAttendance(ticketId, leg, value) {
+  const field = leg === 'berangkat' ? 'bus_departed' : 'bus_returned';
+  const doc = await (await registrations()).findOneAndUpdate(
+    { ticket_id: ticketId.trim().toUpperCase(), departure: 'Bersama' },
+    { $set: { [field]: value, updated_at: new Date() } },
     { returnDocument: 'after' }
   );
   return doc ? toFrontend(doc) : null;

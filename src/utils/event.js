@@ -22,6 +22,9 @@ export const GENDERS = ['Laki-laki', 'Perempuan'];
 // Only this status picks a campus region; every other status has region '-'
 export const STUDENT_STATUS = 'Mahasiswa Gunadarma';
 
+// Year a Gunadarma student started (angkatan); asked only for STUDENT_STATUS, like the campus region
+export const ANGKATAN = ['2026', '2025', '2024', '2023', '2022', '2021', '2020', '2019'];
+
 export const STATUSES = [
   STUDENT_STATUS,
   'Alumni Gunadarma',

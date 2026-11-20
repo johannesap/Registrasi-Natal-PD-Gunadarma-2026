@@ -13,6 +13,7 @@ const HEADERS = [
   'Komsel',
   'Kakak Komsel',
   'Jurusan',
+  'Angkatan',
   'Keberangkatan',
   'Presensi',
   'Terdaftar',
@@ -67,6 +68,7 @@ export default function ParticipantPdf({ at, rows, onDone }) {
               <td>{r.komselStatus?.replace(/\s*\(.*\)$/, '')}</td>
               <td>{r.mentorName}</td>
               <td>{r.faculty}</td>
+              <td>{r.angkatan}</td>
               <td>
                 {r.departure}
                 {r.departureArea !== '-' && ` (${r.departureArea})`}
