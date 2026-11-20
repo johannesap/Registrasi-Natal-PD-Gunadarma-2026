@@ -16,8 +16,9 @@ export default function HeroSection({ onStartRegistration }) {
     }, 450);
   };
 
+  // Short laptop screens (max-height 920px) get tighter gaps, so the button stays on screen with the logo pill above
   return (
-    <section className="relative min-h-screen w-full flex flex-col items-center justify-between px-4 sm:px-6 pt-24 sm:pt-28 pb-8 overflow-hidden select-none">
+    <section className="relative min-h-screen w-full flex flex-col items-center justify-between px-4 sm:px-6 pt-24 sm:pt-28 lg:[@media(max-height:920px)]:pt-20 pb-8 overflow-hidden select-none">
       {/* Cinematic Center Radiant Warm Aura (GPU Optimized) */}
       <motion.div
         initial={{ opacity: 0, scale: 0.8 }}
@@ -54,7 +55,18 @@ export default function HeroSection({ onStartRegistration }) {
           <ChristmasStar />
         </div>
 
-        {/* 2. Official Badge */}
+        {/* 2. Logos on a dark green (pine) pill at 95%; the logos have their own white fill, so they stay readable */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.9, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="inline-flex items-center gap-2.5 sm:gap-3 px-3 sm:px-4 py-1.5 mb-3 rounded-full bg-emerald-800/95 border border-emerald-300/40 shadow-[0_4px_18px_rgba(0,0,0,0.45)] transform-gpu"
+        >
+          <img src="/logo-gunadarma.png" alt="Logo Universitas Gunadarma" className="h-9 sm:h-11 w-auto" />
+          <img src="/logo-pd.png" alt="Logo Persekutuan Doa Universitas Gunadarma" className="h-9 sm:h-11 w-auto" />
+        </motion.div>
+
+        {/* 3. Official Badge */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -114,7 +126,7 @@ export default function HeroSection({ onStartRegistration }) {
             delay: 1.7,
             ease: [0.16, 1, 0.3, 1],
           }}
-          className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-semibold tracking-[0.14em] sm:tracking-[0.2em] uppercase text-white font-['Cinzel'] mt-2.5 sm:mt-4 px-2 transform-gpu"
+          className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-semibold tracking-[0.14em] sm:tracking-[0.2em] uppercase text-white font-['Cinzel'] mt-2.5 sm:mt-4 lg:[@media(max-height:920px)]:mt-2 px-2 transform-gpu"
           style={{
             textShadow: '0 0 15px rgba(255, 255, 255, 0.35)',
             willChange: 'transform, opacity',
@@ -147,7 +159,7 @@ export default function HeroSection({ onStartRegistration }) {
             delay: 3.4,
             ease: [0.16, 1, 0.3, 1],
           }}
-          className="mt-5 sm:mt-7 max-w-xl mx-auto px-4"
+          className="mt-5 sm:mt-7 lg:[@media(max-height:920px)]:mt-4 max-w-xl mx-auto px-4"
         >
           <p className="text-2xl sm:text-3xl md:text-4xl font-['Cormorant_Garamond'] italic font-semibold tracking-wide text-gold-gradient text-gold-glow leading-tight">
             &ldquo;{EVENT.theme}&rdquo;
@@ -166,7 +178,7 @@ export default function HeroSection({ onStartRegistration }) {
             delay: 3.9,
             ease: [0.16, 1, 0.3, 1],
           }}
-          className="mt-7 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 w-full px-4"
+          className="mt-7 sm:mt-10 lg:[@media(max-height:920px)]:mt-6 flex flex-col sm:flex-row items-center justify-center gap-4 w-full px-4"
         >
           <button
             onClick={handleStartRegistration}
@@ -183,7 +195,7 @@ export default function HeroSection({ onStartRegistration }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1.2, delay: 4.2 }}
-          className="mt-6 sm:mt-7 flex flex-wrap items-center justify-center gap-3 sm:gap-8 text-[11px] sm:text-xs text-gray-400/90 tracking-wider font-light px-2"
+          className="mt-6 sm:mt-7 lg:[@media(max-height:920px)]:mt-4 flex flex-wrap items-center justify-center gap-3 sm:gap-8 text-[11px] sm:text-xs text-gray-400/90 tracking-wider font-light px-2"
         >
           <div className="flex items-center gap-1.5">
             <Calendar className="w-3.5 h-3.5 text-amber-300/80 shrink-0" />

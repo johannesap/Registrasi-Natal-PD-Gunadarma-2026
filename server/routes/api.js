@@ -40,8 +40,10 @@ const router = express.Router();
 
 const str = (v) => (typeof v === 'string' ? v.trim() : '');
 
-// Vercel sets x-real-ip to the visitor's address (and overwrites anything the visitor sends); locally it is absent
-const clientIp = (req) => req.get('x-real-ip') || req.socket.remoteAddress;
+// The visitor's address, for the attempt limits and the audit log. Vercel puts it in x-real-ip (overwriting anything the
+// visitor sends; the tests send it too). Behind another proxy server/start.js sets TRUST_PROXY and Express reads it from
+// that proxy's X-Forwarded-For instead.
+const clientIp = (req) => (process.env.TRUST_PROXY ? req.ip : req.get('x-real-ip')) || req.socket.remoteAddress;
 
 // One audit log line for an action a panitia account took (or tried, for a failed login)
 const audit = (req, user, action, entity, detail = '') =>
@@ -112,6 +114,8 @@ router.get('/health', async (req, res) => {
     event: 'Natal Persekutuan Doa Universitas Gunadarma 2026',
     serverTime: new Date().toISOString(),
     totalRegistrations: await countRegistrations(),
+    // The address the limits see for you: after deploying, two different networks must show two different addresses
+    yourIp: clientIp(req),
   });
 });
 
@@ -162,7 +166,8 @@ function whatsappLink(r, siteUrl) {
     `🗓️ *WAKTU & TEMPAT:*\n` +
     `• Tanggal: ${EVENT.date}\n` +
     `• Pukul: ${EVENT.time}\n` +
-    `• Lokasi: ${EVENT.venue}\n\n` +
+    `• Lokasi: ${EVENT.venue}\n` +
+    `• Peta: ${EVENT.mapUrl}\n\n` +
     `_Simpan pesan ini dan tunjukkan QR check-in di atas saat registrasi ulang di pintu masuk._\n\n` +
     `Sampai berjumpa dalam sukacita Natal! Tuhan Yesus memberkati. 🙏✨`;
 
@@ -406,7 +411,7 @@ function readUser(body, creating) {
     return { error: 'Username 3–40 karakter: huruf kecil, angka, titik, minus, atau garis bawah.' };
   }
   if (email.length > 150 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: 'Format email tidak valid.' };
-  if (!ROLES.includes(role)) return { error: 'Peran harus admin atau sekretariat.' };
+  if (!ROLES.includes(role)) return { error: 'Peran harus admin atau pendataan.' };
   // bcrypt only uses the first 72 bytes
   if ((creating || password) && (password.length < 8 || password.length > 72)) {
     return { error: 'Password harus 8–72 karakter.' };

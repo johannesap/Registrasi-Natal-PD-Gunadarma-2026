@@ -13,7 +13,7 @@ const ADMIN_VIEWS = [
 
 const ROLE_LABELS = {
   admin: 'Admin (kelola akun)',
-  sekretariat: 'Sekretariat (kelola pendaftar)',
+  sekretariat: 'Pendataan (kelola pendaftar)', // shown as Pendataan; the stored role stays 'sekretariat'
 };
 
 const EMPTY_FORM = { id: '', name: '', email: '', role: 'sekretariat', password: '' };
@@ -119,7 +119,7 @@ export default function AccountManager({ onChangePassword, onLogout, onAuthError
               KELOLA AKUN PANITIA
             </h1>
             <p className="text-xs text-gray-400 font-light">
-              Admin mengatur akun. Data pendaftar dikelola oleh akun sekretariat.
+              Admin mengatur akun. Data pendaftar dikelola oleh akun pendataan.
             </p>
           </div>
         </div>
@@ -134,7 +134,7 @@ export default function AccountManager({ onChangePassword, onLogout, onAuthError
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label htmlFor="acc-name" className={labelClass}>Username</label>
-              <input id="acc-name" name="name" required value={form.name} onChange={handleChange} placeholder="contoh: sekretariat2" autoComplete="off" className={inputClass} />
+              <input id="acc-name" name="name" required value={form.name} onChange={handleChange} placeholder="contoh: pendataan2" autoComplete="off" className={inputClass} />
             </div>
             <div>
               <label htmlFor="acc-email" className={labelClass}>Email</label>

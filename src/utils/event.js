@@ -2,7 +2,10 @@
 export const EVENT = {
   date: 'Sabtu, 12 Desember 2026',
   time: '17:00 - 21:00 WIB',
-  venue: 'GBI Lewi Mitra 10 Cibubur',
+  venue: 'GBI Lewi Mitra 10 Cibubur, Lantai 3',
+  mapUrl: 'https://maps.app.goo.gl/Jtg3NaTJE4AZpC5e8',
+  // Pin of that link (GBI Lewi Cibubur, Mitra 10 Lt3); Google's keyless embed takes coordinates, not the short link
+  mapEmbedUrl: 'https://maps.google.com/maps?q=-6.380833,106.9311014&z=16&hl=id&output=embed',
   theme: 'The Unexpected Joy',
   verseRef: 'Lukas 2:10-11',
   verse:

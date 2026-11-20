@@ -15,8 +15,8 @@ export default function Footer() {
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center md:items-start justify-between gap-6 sm:gap-8 text-center md:text-left">
         {/* Contact persons (WhatsApp) */}
         <div className="space-y-2">
-          <h4 className="font-['Cinzel'] font-bold text-xs sm:text-sm tracking-wider text-gold-gradient uppercase">
-            Kontak Person
+          <h4 className="font-['Cinzel'] font-bold text-xs sm:text-sm tracking-wider text-gold-gradient uppercase italic">
+            Contact Person
           </h4>
           <ul className="space-y-1.5 text-[11px] sm:text-xs text-gray-300">
             {CONTACTS.map((c) => (

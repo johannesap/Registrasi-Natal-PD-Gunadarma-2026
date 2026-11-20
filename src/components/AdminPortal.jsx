@@ -412,7 +412,7 @@ export default function AdminPortal({ onBackToHome }) {
             <div className="flex flex-wrap items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
               <span className="text-[11px] font-semibold tracking-widest uppercase text-amber-300">
-                PANEL RESMI KESEKRETARIATAN NATAL 2026
+                PANEL RESMI PENDATAAN NATAL 2026
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold font-['Cinzel'] text-gold-gradient tracking-wide uppercase">

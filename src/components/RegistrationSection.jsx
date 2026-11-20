@@ -743,6 +743,34 @@ export default function RegistrationSection() {
             <p className="text-[11px] text-gray-400 text-center mt-3">
               Pratinjau tiket. Kode tiket resmi muncul setelah Anda menekan Konfirmasi.
             </p>
+
+            {/* Venue map */}
+            <div className="mt-6 rounded-2xl overflow-hidden border border-amber-400/30 bg-emerald-950/60">
+              <div className="flex items-center justify-between gap-3 px-4 py-3">
+                <span className="text-xs font-semibold tracking-widest uppercase text-amber-300 flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5" />
+                  Lokasi Natal
+                </span>
+                <a
+                  href={EVENT.mapUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[11px] text-emerald-300 hover:text-emerald-200 inline-flex items-center gap-1"
+                >
+                  Buka di Google Maps
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+              <iframe
+                title={`Peta lokasi ${EVENT.venue}`}
+                src={EVENT.mapEmbedUrl}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                allowFullScreen
+                className="block w-full h-56 border-0"
+              />
+              <p className="px-4 py-2.5 text-[11px] text-gray-300">{EVENT.venue}</p>
+            </div>
           </div>
         </motion.div>
       </div>
