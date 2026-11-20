@@ -8,6 +8,7 @@ const W = 460; // card width in CSS pixels; drawn at 2x for a sharp image
 const PAD = 24;
 const MARGIN = 20; // page colour around the card: a JPG has no transparency for the rounded corners
 const SCALE = 2;
+const QR_SIZE = 132; // check-in QR, beside the date/time/place box
 const SANS = '"Plus Jakarta Sans", system-ui, sans-serif';
 const MONO = 'ui-monospace, Menlo, Consolas, monospace';
 const GOLD = '#f7d660';
@@ -144,23 +145,32 @@ function drawTicket(ctx, p, qr, H) {
     y += meetingLines.length * 13;
   }
 
-  // Date, time and place
+  // Date, time and place, with the check-in QR beside them
   y += 20;
-  const lines = [EVENT.date, EVENT.time, ...wrap(ctx, EVENT.venue, inner - 42, `400 11px ${SANS}`)];
-  const boxH = 24 + lines.length * 16;
+  const boxW = inner - QR_SIZE - 12;
+  const lines = [EVENT.date, EVENT.time, ...wrap(ctx, EVENT.venue, boxW - 42, `400 12px ${SANS}`)];
+  const boxH = Math.max(QR_SIZE, 24 + lines.length * 24);
   ctx.beginPath();
-  ctx.roundRect(PAD, y, inner, boxH, 12);
+  ctx.roundRect(PAD, y, boxW, boxH, 12);
   ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
   ctx.fill();
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
   ctx.stroke();
+  const first = y + (boxH - lines.length * 24) / 2 + 16; // lines centred in the box
   lines.forEach((line, i) => {
-    if (i < 3) star(ctx, PAD + 18, y + 20 + i * 16 - 4, 5, GOLD);
-    text(ctx, line, PAD + 30, y + 20 + i * 16, `400 11px ${SANS}`, TEXT);
+    if (i < 3) star(ctx, PAD + 18, first + i * 24 - 4, 5, GOLD);
+    text(ctx, line, PAD + 30, first + i * 24, `400 12px ${SANS}`, TEXT);
   });
+  const qrY = y + (boxH - QR_SIZE) / 2;
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(W - PAD - QR_SIZE, qrY, QR_SIZE, QR_SIZE, 10);
+  ctx.clip();
+  ctx.drawImage(qr, W - PAD - QR_SIZE, qrY, QR_SIZE, QR_SIZE);
+  ctx.restore();
   y += boxH + 16;
 
-  // Ticket code and check-in QR
+  // Ticket code
   ctx.setLineDash([4, 4]);
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
   ctx.beginPath();
@@ -169,15 +179,9 @@ function drawTicket(ctx, p, qr, H) {
   ctx.stroke();
   ctx.setLineDash([]);
   y += 14;
-  text(ctx, 'KODE TIKET RESMI', PAD, y + 41, `400 9px ${SANS}`, GOLD, '1.8px');
-  text(ctx, p.ticketId, PAD, y + 60, `700 14px ${MONO}`, GOLD);
-  ctx.save();
-  ctx.beginPath();
-  ctx.roundRect(W - PAD - 96, y, 96, 96, 8);
-  ctx.clip();
-  ctx.drawImage(qr, W - PAD - 96, y, 96, 96);
-  ctx.restore();
-  return y + 96;
+  text(ctx, 'KODE TIKET RESMI', PAD, y + 9, `400 9px ${SANS}`, GOLD, '1.8px');
+  text(ctx, p.ticketId, PAD, y + 28, `700 14px ${MONO}`, GOLD);
+  return y + 32;
 }
 
 export async function ticketJpgBlob(p) {
@@ -188,7 +192,7 @@ export async function ticketJpgBlob(p) {
     )
   );
   const qr = document.createElement('canvas');
-  await QRCode.toCanvas(qr, p.ticketId, { margin: 2, width: 96 * SCALE });
+  await QRCode.toCanvas(qr, p.ticketId, { margin: 2, width: QR_SIZE * SCALE });
 
   // Lay out once to learn the height, then draw for real
   const H = drawTicket(document.createElement('canvas').getContext('2d'), p, qr, 2000) + PAD;
