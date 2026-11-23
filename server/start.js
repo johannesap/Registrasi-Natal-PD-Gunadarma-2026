@@ -10,6 +10,18 @@ import express from 'express';
 process.env.TRUST_PROXY ??= '1';
 const { default: app } = await import('./app.js');
 
+// The protective headers of vercel.json for the site's pages and files (no framing by other sites, camera only for
+// our own Scan QR); the API, mounted earlier in app.js, answers before this. Keep the two lists in sync.
+app.use((req, res, next) => {
+  res.set({
+    'X-Frame-Options': 'DENY',
+    'Content-Security-Policy': "frame-ancestors 'none'",
+    'X-Content-Type-Options': 'nosniff',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Permissions-Policy': 'camera=(self), microphone=(), geolocation=()',
+  });
+  next();
+});
 app.use(express.static(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'dist')));
 
 const port = process.env.PORT || 3000;

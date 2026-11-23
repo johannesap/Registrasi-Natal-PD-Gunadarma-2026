@@ -384,6 +384,27 @@ router.post('/admin/login', async (req, res) => {
   });
 });
 
+// Passwords that fall within the 5 tries the login allows: common ones and ones built from the username
+const COMMON_PASSWORDS = new Set([
+  '12345678', '123456789', '1234567890', '87654321', '11111111', '00000000', '12341234', '11223344',
+  'password', 'password1', 'password123', 'passw0rd', 'qwerty123', 'qwertyuiop', 'asdfghjkl', 'iloveyou',
+  'admin123', 'admin1234', 'administrator', 'sekretariat', 'pendataan', 'panitia123', 'welcome1',
+  'natal123', 'natal2025', 'natal2026', 'gunadarma', 'gunadarma123', 'gunadarma2026', 'pdgunadarma', 'pdug2026',
+  'persekutuandoa', 'tuhanyesus', 'yesuskristus', 'haleluya', 'jesus123', 'jesuschrist',
+]);
+
+// Why a new password must not be used, or null when it is fine
+function passwordProblem(password, username) {
+  // bcrypt only uses the first 72 bytes
+  if (password.length < 8 || password.length > 72) return 'Password harus 8–72 karakter.';
+  const lower = password.toLowerCase();
+  if (lower.includes(username.toLowerCase())) return 'Password tidak boleh mengandung username.';
+  if (COMMON_PASSWORDS.has(lower) || /^(.)\1+$/.test(lower)) {
+    return 'Password ini terlalu umum dan mudah ditebak. Pakai gabungan kata dan angka yang tidak umum.';
+  }
+  return null;
+}
+
 // POST /api/me/password  body: { currentPassword, newPassword } - change your own password
 router.post('/me/password', anyRole, async (req, res) => {
   const current = str(req.body?.currentPassword);
@@ -392,9 +413,8 @@ router.post('/me/password', anyRole, async (req, res) => {
   if (!(await passwordMatches(req.user, current))) {
     return res.status(422).json({ success: false, message: 'Password lama salah.' });
   }
-  if (next.length < 8 || next.length > 72) {
-    return res.status(422).json({ success: false, message: 'Password baru harus 8–72 karakter.' });
-  }
+  const problem = passwordProblem(next, req.user.name);
+  if (problem) return res.status(422).json({ success: false, message: problem });
   if (next === current) {
     return res.status(422).json({ success: false, message: 'Password baru harus berbeda dari password lama.' });
   }
@@ -435,10 +455,9 @@ function readUser(body, creating) {
   }
   if (email.length > 150 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: 'Format email tidak valid.' };
   if (!ROLES.includes(role)) return { error: 'Peran harus admin atau pendataan.' };
-  // bcrypt only uses the first 72 bytes
-  if ((creating || password) && (password.length < 8 || password.length > 72)) {
-    return { error: 'Password harus 8–72 karakter.' };
-  }
+  // Required when creating; when editing only checked if a new one was typed
+  const problem = (creating || password) && passwordProblem(password, name);
+  if (problem) return { error: problem };
   return { fields: { name, email, role }, password };
 }
 

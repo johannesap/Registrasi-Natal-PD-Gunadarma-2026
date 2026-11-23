@@ -269,6 +269,23 @@ test('admin creates, edits and deletes accounts; changes apply at once', { skip 
   assert.equal((await authed(`/users/${self}`, adm, 'DELETE')).status, 409, 'cannot delete own account');
 });
 
+test('weak passwords are refused when creating, resetting or changing one', { skip }, async () => {
+  const adm = await loginToken('tes-adm');
+  const account = { name: 'tes-lemah', email: 'tes-lemah@example.com', role: 'sekretariat' };
+  for (const weak of ['tes-lemah123', 'Natal2026', 'password123', 'aaaaaaaa', 'pendek']) {
+    assert.equal((await authed('/users', adm, 'POST', { ...account, password: weak })).status, 422, weak);
+  }
+  const created = await (await authed('/users', adm, 'POST', { ...account, password: 'Bintang-Timur-48' })).json();
+  assert.equal(created.success, true);
+  testUserIds.push(created.data.id);
+
+  const reset = await authed(`/users/${created.data.id}`, adm, 'PATCH', { ...account, password: 'qwerty123' });
+  assert.equal(reset.status, 422, 'admin reset to a common password');
+  const own = await loginToken('tes-lemah', 'Bintang-Timur-48');
+  const change = await authed('/me/password', own, 'POST', { currentPassword: 'Bintang-Timur-48', newPassword: 'TES-LEMAH-2026' });
+  assert.equal(change.status, 422, 'own new password containing the username, other letter case');
+});
+
 test('the last admin cannot be demoted', { skip }, async (t) => {
   if ((await countAdmins()) !== 1) return t.skip('other admin accounts exist in this database');
   const adm = await loginToken('tes-adm');
