@@ -210,7 +210,11 @@ export default function AdminPortal({ onBackToHome }) {
         item.mentorName?.toLowerCase().includes(q) ||
         item.faculty?.toLowerCase().includes(q);
 
-      const matchRegion = selectedRegion === 'all' || item.region === selectedRegion;
+      // "Alumni / Tamu" = everyone who is not a Gunadarma student: they are saved with region '-' (old data: 'alumni_tamu')
+      const matchRegion =
+        selectedRegion === 'all' ||
+        item.region === selectedRegion ||
+        (selectedRegion === 'alumni_tamu' && item.region === '-');
 
       // Alumni / Pengurus and Tamu are neither "Sudah" nor "Belum"
       const matchKomsel =

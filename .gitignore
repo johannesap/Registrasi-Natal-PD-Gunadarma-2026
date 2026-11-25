@@ -31,3 +31,9 @@ server/data/registrations.json
 
 # Old Laravel backend, removed from the repo; a local copy may still hold its .env with the Atlas password
 backend/
+
+# Original song and logos: kept locally only (the site uses the compressed song and public/logo-*.png)
+Jesus It Is You.mpeg
+LOGO PD 2024.png
+Logo Gunadarma (Universitas Gunadarma) Original PNG.png
+public/logos/

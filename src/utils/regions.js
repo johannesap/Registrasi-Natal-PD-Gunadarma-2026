@@ -6,7 +6,8 @@ export const REGIONS = [
   { id: 'cengkareng', name: 'Cengkareng' },
   { id: 'salemba', name: 'Salemba' },
   { id: 'simatupang', name: 'TB Simatupang' },
-  // Only for registrations from before the Status field; alumni and guests now pick it as their Status
+  // Not pickable in the form (alumni and guests pick it as their Status and get region '-'); old data has it, and the
+  // panitia filter uses it for everyone without a campus region
   { id: 'alumni_tamu', name: 'Alumni / Tamu' },
 ];
 

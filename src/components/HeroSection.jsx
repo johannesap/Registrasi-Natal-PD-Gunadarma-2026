@@ -66,15 +66,15 @@ export default function HeroSection({ onStartRegistration }) {
           <img src="/logo-pd.png" alt="Logo Persekutuan Doa Universitas Gunadarma" className="h-9 sm:h-11 w-auto" />
         </motion.div>
 
-        {/* 3. Official Badge */}
+        {/* 3. Event line: no pill, the same gold Cinzel as "NATAL 2026" below, kept small */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.9, delay: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full mb-3 text-[11px] sm:text-xs tracking-[0.25em] uppercase font-medium text-amber-200/90 border border-amber-400/25 bg-amber-950/20 backdrop-blur-sm shadow-[0_0_15px_rgba(234,179,8,0.15)] transform-gpu"
-          style={{ willChange: 'transform, opacity' }}
+          className="mb-2 sm:mb-3 text-sm sm:text-base md:text-lg font-['Cinzel'] font-bold tracking-[0.25em] uppercase text-gold-gradient transform-gpu"
+          style={{ willChange: 'transform, opacity', textShadow: '0 0 12px rgba(254, 240, 138, 0.3)' }}
         >
-          <span>Ibadah & Perayaan Natal 2026</span>
+          Ibadah & Perayaan
         </motion.div>
 
         {/* 3. "NATAL" - Largest text with GPU-accelerated smooth scale + opacity */}
@@ -98,13 +98,13 @@ export default function HeroSection({ onStartRegistration }) {
           style={{ willChange: 'transform, opacity' }}
         >
           <h1
-            className="text-5xl sm:text-7xl md:text-8xl lg:text-[10rem] lg:[@media(max-height:820px)]:text-8xl font-extrabold tracking-wide sm:tracking-wider font-['Cinzel'] leading-none text-gold-gradient uppercase py-1 select-none"
+            className="text-5xl sm:text-7xl md:text-8xl xl:text-[10rem] xl:[@media(max-height:820px)]:text-8xl font-extrabold tracking-wide sm:tracking-wider font-['Cinzel'] leading-none text-gold-gradient uppercase py-1 select-none whitespace-nowrap"
             style={{
               textShadow:
                 '0 0 20px rgba(254, 240, 138, 0.35), 0 0 50px rgba(234, 179, 8, 0.2)',
             }}
           >
-            NATAL
+            NATAL 2026
           </h1>
 
           {/* Underline subtle light bar */}
