@@ -71,10 +71,10 @@ export default function HeroSection({ onStartRegistration }) {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.9, delay: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="mb-2 sm:mb-3 text-sm sm:text-base md:text-lg font-['Cinzel'] font-bold tracking-[0.25em] uppercase text-gold-gradient transform-gpu"
+          className="mb-2 sm:mb-3 text-base sm:text-xl md:text-2xl xl:text-3xl font-['Cinzel'] font-bold tracking-[0.25em] uppercase text-gold-gradient transform-gpu"
           style={{ willChange: 'transform, opacity', textShadow: '0 0 12px rgba(254, 240, 138, 0.3)' }}
         >
-          Ibadah & Perayaan
+          Ibadah dan Perayaan
         </motion.div>
 
         {/* 3. "NATAL" - Largest text with GPU-accelerated smooth scale + opacity */}
