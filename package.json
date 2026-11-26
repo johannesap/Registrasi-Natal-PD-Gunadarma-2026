@@ -10,6 +10,8 @@
     "lint": "oxlint",
     "test": "node --test server/auth.test.js server/db.test.js server/proxy.test.js",
     "set-admin": "node server/set-admin.js",
+    "backup": "node server/backup.js",
+    "restore": "node server/backup.js restore",
     "preview": "vite preview"
   },
   "dependencies": {

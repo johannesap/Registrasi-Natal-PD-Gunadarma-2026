@@ -34,6 +34,8 @@ React + Vite (tampilan), Express (API, `server/`), MongoDB Atlas (data), di-depl
 | `npm run build` | Build untuk production |
 | `npm start` | Server production di luar Vercel (Hostinger, VPS): situs dari `dist/` + API, port `PORT` (bawaan 3000) |
 | `npm run set-admin -- <username> <email> <admin\|sekretariat>` | Buat akun, atau reset password-nya |
+| `npm run backup` | Salin database live ke `backups/` (Atlas gratis tidak punya backup). Butuh `LIVE_MONGODB_URI` di `.env`. Filenya berisi data pribadi: jangan dibagikan |
+| `npm run restore -- backups/<file>.json` | Kembalikan data yang terhapus dari file backup; data yang masih ada tidak diubah |
 
 ## Mengubah isi acara
 
