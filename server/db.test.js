@@ -98,7 +98,7 @@ test('registering again with the same phone and name returns the same ticket', {
   // The WhatsApp message names the meeting point, then its address
   assert.match(
     decodeURIComponent(first.dispatch.whatsappUrl),
-    /TITIK KUMPUL KEBERANGKATAN DEPOK:\*\n\*Depan Rumah Sakit Bhayangkara Brimob, Kelapa Dua\*\nAlamat: Jl\. Komjen\. Pol\. M\. Jasin/
+    /TITIK KUMPUL KEBERANGKATAN DEPOK:\*\n\*Depan Rumah Sakit Bhayangkara Brimob, Kelapa Dua\*\nAlamat: Jl\. Komjen\. Pol\. M\. Jasin.*\nPeta: https:\/\/maps\.app\.goo\.gl\/Q1oZXve9XoMeMGL38\n/
   );
 
   // Name in other letter case and phone written as 62…: still the same person

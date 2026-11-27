@@ -170,7 +170,9 @@ function whatsappLink(r, siteUrl) {
     (MEETING_POINTS[r.departureArea]
       ? `🚌 *TITIK KUMPUL KEBERANGKATAN ${r.departureArea.toUpperCase()}:*\n` +
         `*${MEETING_POINTS[r.departureArea].place}*\n` +
-        `Alamat: ${MEETING_POINTS[r.departureArea].address}\n\n`
+        `Alamat: ${MEETING_POINTS[r.departureArea].address}\n` +
+        (MEETING_POINTS[r.departureArea].mapUrl ? `Peta: ${MEETING_POINTS[r.departureArea].mapUrl}\n` : '') +
+        `\n`
       : '') +
     (WHATSAPP_GROUP_URL ? `👥 *GABUNG GRUP WHATSAPP PESERTA:*\n${WHATSAPP_GROUP_URL}\n\n` : '') +
     `🔳 *QR CHECK-IN* (buka & tunjukkan di pintu masuk):\n` +

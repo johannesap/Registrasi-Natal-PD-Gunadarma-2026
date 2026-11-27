@@ -60,12 +60,14 @@ export const KOMSEL_OPTIONS = [
 ];
 
 // "Bersama" departs from one of these meeting points; "Pribadi" travels on their own (area '-').
-// place: where to wait; address: shown under it and searched for "Buka di Google Maps".
+// place: where to wait; address: shown under it. mapUrl (optional): the exact pin, used for "Buka di Google Maps"
+// and sent in the WhatsApp message; without it the button searches the address.
 export const DEPARTURES = ['Pribadi', 'Bersama'];
 export const MEETING_POINTS = {
   Depok: {
     place: 'Depan Rumah Sakit Bhayangkara Brimob, Kelapa Dua',
     address: 'Jl. Komjen. Pol. M. Jasin, Pasir Gn. Sel., Kec. Cimanggis, Kota Depok, Jawa Barat 16451',
+    mapUrl: 'https://maps.app.goo.gl/Q1oZXve9XoMeMGL38',
   },
   Kalimalang: {
     place: 'Kampus J1 Gunadarma',

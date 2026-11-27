@@ -937,7 +937,7 @@ export default function RegistrationSection() {
                     <span className="text-gray-400">Alamat:</span> {MEETING_POINTS[registered.departureArea].address}
                   </p>
                   <a
-                    href={mapsUrl(MEETING_POINTS[registered.departureArea].address)}
+                    href={MEETING_POINTS[registered.departureArea].mapUrl || mapsUrl(MEETING_POINTS[registered.departureArea].address)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-full text-[11px] font-semibold text-emerald-950 bg-emerald-300 hover:bg-emerald-200 transition-colors"
