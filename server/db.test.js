@@ -95,6 +95,11 @@ test('registering again with the same phone and name returns the same ticket', {
   assert.match(ticketId, /^NATAL-UG-\d{4}-0001$/, 'suffix is the last 4 digits of the phone');
   assert.equal(first.data.departureArea, 'Depok');
   assert.equal(first.data.angkatan, '2024');
+  // The WhatsApp message names the meeting point, then its address
+  assert.match(
+    decodeURIComponent(first.dispatch.whatsappUrl),
+    /TITIK KUMPUL KEBERANGKATAN DEPOK:\*\n\*Depan Rumah Sakit Bhayangkara Brimob, Kelapa Dua\*\nAlamat: Jl\. Komjen\. Pol\. M\. Jasin/
+  );
 
   // Name in other letter case and phone written as 62…: still the same person
   const again = await (
@@ -126,19 +131,39 @@ test('Pribadi always stores area "-"; Bersama needs a known area', { skip }, asy
     { komselStatus: 'apa saja' },
     { komselStatus: 'Alumni / Pengurus' },
     { region: 'alumni_tamu' },
-    { angkatan: '2018' },
+    { angkatan: '2018' }, // students pick from the list
     { angkatan: '' },
     { status: 'Dosen' },
+    { status: 'Alumni Gunadarma', angkatan: '1975' },
+    { status: 'Alumni Gunadarma', angkatan: '2030' },
+    { status: 'Alumni Gunadarma', angkatan: '20x4' },
+    { status: 'Alumni Gunadarma', region: '-' },
+    { status: 'Alumni Gunadarma', departure: '' },
+    { status: 'Media Partner' }, // without the media partner's name
   ]) {
-    assert.equal((await register({ ...person, whatsapp: '081299990003', ...bad })).status, 422, JSON.stringify(bad));
+    // Own network, so these do not use up the 20-a-minute limit the other tests register under
+    assert.equal((await register({ ...person, whatsapp: '081299990003', ...bad }, `${TEST_IP}-bad`)).status, 422, JSON.stringify(bad));
   }
 });
 
-test('only Gunadarma students keep a campus region and angkatan; other statuses store "-"', { skip }, async () => {
-  const body = await (await register({ ...person, whatsapp: '081299990004', status: 'Media Partner', region: 'depok' })).json();
-  await deleteRegistration(body.data.ticketId);
-  assert.equal(body.data.region, '-');
-  assert.equal(body.data.angkatan, '-');
+test('students and alumni keep region, angkatan and departure; other statuses store "-" and their affiliation', { skip }, async () => {
+  const alumni = (await (await register({ ...person, whatsapp: '081299990004', status: 'Alumni Gunadarma', angkatan: '1998' })).json()).data;
+  await deleteRegistration(alumni.ticketId);
+  assert.deepEqual([alumni.region, alumni.angkatan, alumni.departure, alumni.affiliation], ['depok', '1998', 'Bersama', '-']);
+
+  const media = await (
+    await register({ ...person, whatsapp: '081299990005', status: 'Media Partner', affiliation: ' Kompas ' })
+  ).json();
+  await deleteRegistration(media.data.ticketId);
+  const d = media.data;
+  assert.deepEqual([d.region, d.angkatan, d.departure, d.departureArea, d.affiliation], ['-', '-', '-', '-', 'Kompas']);
+  assert.match(decodeURIComponent(media.dispatch.whatsappUrl), /Nama Media Partner: \*Kompas\*/);
+  assert.doesNotMatch(decodeURIComponent(media.dispatch.whatsappUrl), /Keberangkatan:/);
+
+  // Umum gives no affiliation even if one is sent
+  const umum = (await (await register({ ...person, whatsapp: '081299990007', status: 'Umum (di luar Gunadarma)', affiliation: 'x' })).json()).data;
+  await deleteRegistration(umum.ticketId);
+  assert.equal(umum.affiliation, '-');
 });
 
 test('more than 20 registrations a minute from one network get 429', { skip }, async () => {

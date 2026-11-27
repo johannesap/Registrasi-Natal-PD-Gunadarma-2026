@@ -5,67 +5,68 @@
   --font-garamond: 'Cormorant Garamond', serif;
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
 
-  /* Natal 2026 palette: maroon #7a1c1c, pine #1a4d3e, sage #4e8774, gold #f3c430, cream #fcfbf7.
-     Components use Tailwind's amber / emerald / rose / gray / neutral names; these scales remap them onto it. */
-  --color-amber-50: #fefaea;
-  --color-amber-100: #fdf1c6;
-  --color-amber-200: #fae594;
-  --color-amber-300: #f7d660;
-  --color-amber-400: #f3c430;
-  --color-amber-500: #dcab17;
-  --color-amber-600: #b88a10;
-  --color-amber-700: #8f6a0e;
-  --color-amber-800: #6b4f0d;
-  --color-amber-900: #4a370b;
-  --color-amber-950: #2e2206;
+  /* Natal 2026 palette (from the poster): navy #0d192d #012265, red #a20000 #480000 #350000, cream #ffefd2,
+     tan #c6b49f, taupe #817667 #443d35, black #000000. Components use Tailwind's names; these scales remap them:
+     amber = cream/tan accent (was gold), emerald = royal navy, rose = curtain red, gray = warm text, neutral = dark navy. */
+  --color-amber-50: #fffaf0;
+  --color-amber-100: #fff5e3;
+  --color-amber-200: #ffefd2;
+  --color-amber-300: #eedfc6;
+  --color-amber-400: #c6b49f;
+  --color-amber-500: #a8977f;
+  --color-amber-600: #8a7c69;
+  --color-amber-700: #6b604f;
+  --color-amber-800: #4f463b;
+  --color-amber-900: #3a332b;
+  --color-amber-950: #241f1a;
 
-  --color-emerald-50: #effaf5;
-  --color-emerald-100: #d6efe5;
-  --color-emerald-200: #b0dccb;
-  --color-emerald-300: #8cc7b1;
-  --color-emerald-400: #6aae95;
-  --color-emerald-500: #4e8774;
-  --color-emerald-600: #3f6f5f;
-  --color-emerald-700: #2f5c4d;
-  --color-emerald-800: #1a4d3e;
-  --color-emerald-900: #143b30;
-  --color-emerald-950: #0b241d;
+  --color-emerald-50: #eef3fc;
+  --color-emerald-100: #d5e0f5;
+  --color-emerald-200: #abc0e8;
+  --color-emerald-300: #7f9dd8;
+  --color-emerald-400: #5579c4;
+  --color-emerald-500: #2f56a8;
+  --color-emerald-600: #1a3f8c;
+  --color-emerald-700: #0d2f78;
+  --color-emerald-800: #012265;
+  --color-emerald-900: #011a4d;
+  --color-emerald-950: #0d192d;
 
-  --color-rose-50: #fdf3f3;
-  --color-rose-100: #fae3e3;
-  --color-rose-200: #f4c4c4;
-  --color-rose-300: #e99b9b;
-  --color-rose-400: #db6f6f;
-  --color-rose-500: #c04848;
-  --color-rose-600: #a03030;
-  --color-rose-700: #8a2424;
-  --color-rose-800: #7a1c1c;
-  --color-rose-900: #5c1515;
-  --color-rose-950: #380c0c;
+  --color-rose-50: #fdf0f0;
+  --color-rose-100: #fadcdc;
+  --color-rose-200: #f3b5b5;
+  --color-rose-300: #e88a8a;
+  --color-rose-400: #d65a5a;
+  --color-rose-500: #c02020;
+  --color-rose-600: #a20000;
+  --color-rose-700: #7a0000;
+  --color-rose-800: #480000;
+  --color-rose-900: #350000;
+  --color-rose-950: #1f0000;
 
-  --color-gray-50: #fcfbf7;
-  --color-gray-100: #f4f2ea;
-  --color-gray-200: #e5e3d8;
-  --color-gray-300: #cdcfc4;
-  --color-gray-400: #a3aba1;
-  --color-gray-500: #78837a;
-  --color-gray-600: #59645c;
-  --color-gray-700: #414c45;
-  --color-gray-800: #2a3530;
-  --color-gray-900: #18231e;
-  --color-gray-950: #0c1511;
+  --color-gray-50: #fffaf0;
+  --color-gray-100: #ffefd2;
+  --color-gray-200: #efe2cc;
+  --color-gray-300: #dccdb8;
+  --color-gray-400: #c6b49f;
+  --color-gray-500: #a1937f;
+  --color-gray-600: #817667;
+  --color-gray-700: #625a4e;
+  --color-gray-800: #443d35;
+  --color-gray-900: #2b2621;
+  --color-gray-950: #161310;
 
-  --color-neutral-50: #f7f8f6;
-  --color-neutral-100: #eceee9;
-  --color-neutral-200: #d6dbd4;
-  --color-neutral-300: #b5bdb4;
-  --color-neutral-400: #8a958b;
-  --color-neutral-500: #647065;
-  --color-neutral-600: #4a564d;
-  --color-neutral-700: #33413a;
-  --color-neutral-800: #1f2f29;
-  --color-neutral-900: #12211c;
-  --color-neutral-950: #07130f;
+  --color-neutral-50: #f2f4f8;
+  --color-neutral-100: #e1e5ee;
+  --color-neutral-200: #c3cad9;
+  --color-neutral-300: #9aa4ba;
+  --color-neutral-400: #6e7a95;
+  --color-neutral-500: #4b5773;
+  --color-neutral-600: #333e58;
+  --color-neutral-700: #222c43;
+  --color-neutral-800: #172238;
+  --color-neutral-900: #0d192d;
+  --color-neutral-950: #050a14;
 }
 
 @layer base {
@@ -80,8 +81,8 @@
   }
 
   body {
-    background-color: #06140f;
-    color: #f4f2ea;
+    background-color: #0d192d;
+    color: #ffefd2;
     overflow-x: hidden;
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   }
@@ -92,12 +93,12 @@
   0%, 100% {
     opacity: 0.6;
     transform: scale(1);
-    filter: drop-shadow(0 0 15px rgba(243, 196, 48, 0.45));
+    filter: drop-shadow(0 0 15px rgba(255, 239, 210, 0.45));
   }
   50% {
     opacity: 0.95;
     transform: scale(1.08);
-    filter: drop-shadow(0 0 35px rgba(243, 196, 48, 0.8)) drop-shadow(0 0 60px rgba(220, 171, 23, 0.5));
+    filter: drop-shadow(0 0 35px rgba(255, 239, 210, 0.8)) drop-shadow(0 0 60px rgba(198, 180, 159, 0.5));
   }
 }
 
@@ -159,13 +160,14 @@
 
 /* Gold Text Shimmer */
 .text-gold-gradient {
-  background: linear-gradient(135deg, #fff8dc 0%, #f7d660 30%, #f3c430 60%, #fff1b8 85%, #d9a614 100%);
+  /* Cream with a tan sheen, like the poster's titles */
+  background: linear-gradient(135deg, #fffaf0 0%, #ffefd2 30%, #e6d3b6 60%, #fff5e3 85%, #c6b49f 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .text-gold-glow {
-  text-shadow: 0 0 25px rgba(243, 196, 48, 0.45), 0 0 50px rgba(220, 171, 23, 0.25);
+  text-shadow: 0 0 25px rgba(255, 239, 210, 0.45), 0 0 50px rgba(198, 180, 159, 0.25);
 }
 
 .text-white-glow {
@@ -174,15 +176,15 @@
 
 /* Glassmorphism Classes */
 .glass-panel {
-  background: rgba(12, 38, 30, 0.7);
+  background: rgba(17, 31, 56, 0.7);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(243, 196, 48, 0.2);
+  border: 1px solid rgba(255, 239, 210, 0.2);
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .glass-panel-subtle {
-  background: rgba(16, 44, 35, 0.5);
+  background: rgba(20, 36, 64, 0.5);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -190,13 +192,13 @@
 
 @media (max-width: 768px) {
   .glass-panel {
-    background: rgba(12, 38, 30, 0.95);
+    background: rgba(17, 31, 56, 0.95);
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
   }
   .glass-panel-subtle {
-    background: rgba(16, 44, 35, 0.92);
+    background: rgba(20, 36, 64, 0.92);
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
   }
@@ -204,8 +206,8 @@
 
 /* Gold Button Glow */
 .gold-btn {
-  background: linear-gradient(135deg, #fbe08a 0%, #f3c430 50%, #c4940e 100%);
-  box-shadow: 0 0 25px rgba(243, 196, 48, 0.4), 0 4px 15px rgba(0, 0, 0, 0.4);
+  background: linear-gradient(135deg, #fff5e3 0%, #ffefd2 50%, #c6b49f 100%);
+  box-shadow: 0 0 25px rgba(255, 239, 210, 0.4), 0 4px 15px rgba(0, 0, 0, 0.4);
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   overflow: hidden;
@@ -213,7 +215,7 @@
 
 .gold-btn:hover {
   transform: translateY(-2px) scale(1.03);
-  box-shadow: 0 0 35px rgba(243, 196, 48, 0.7), 0 8px 25px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 35px rgba(255, 239, 210, 0.7), 0 8px 25px rgba(0, 0, 0, 0.5);
 }
 
 .gold-btn::after {
@@ -269,7 +271,7 @@
     vertical-align: top;
   }
   .print-sheet th {
-    background: #e8efe9;
+    background: #f3ecdf;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
@@ -288,18 +290,18 @@
   width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #06140f;
+  background: #0d192d;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1a4d3e;
+  background: #012265;
   border-radius: 4px;
-  border: 1px solid rgba(243, 196, 48, 0.25);
+  border: 1px solid rgba(255, 239, 210, 0.25);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #4e8774;
+  background: #c6b49f;
 }
 
 /* Striped ribbon in the four palette colours, for the top edge of cards */
 .palette-ribbon {
-  background: linear-gradient(90deg, #7a1c1c 0 25%, #1a4d3e 25% 50%, #4e8774 50% 75%, #f3c430 75% 100%);
+  background: linear-gradient(90deg, #a20000 0 25%, #012265 25% 50%, #c6b49f 50% 75%, #ffefd2 75% 100%);
 }

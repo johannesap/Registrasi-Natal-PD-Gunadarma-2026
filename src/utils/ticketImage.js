@@ -1,5 +1,5 @@
 import QRCode from 'qrcode';
-import { EVENT, MEETING_POINTS } from './event';
+import { EVENT, MEETING_POINTS, withAffiliation } from './event';
 import { regionName } from './regions';
 
 // The issued e-ticket drawn on a canvas and saved as JPG. It mirrors TicketCard in RegistrationSection.jsx:
@@ -11,10 +11,10 @@ const SCALE = 2;
 const QR_SIZE = 132; // check-in QR, beside the date/time/place box
 const SANS = '"Plus Jakarta Sans", system-ui, sans-serif';
 const MONO = 'ui-monospace, Menlo, Consolas, monospace';
-const GOLD = '#f7d660';
-const LABEL = '#a3aba1';
-const TEXT = '#e5e3d8';
-const BORDER = 'rgba(243, 196, 48, 0.3)';
+const GOLD = '#ffefd2';
+const LABEL = '#c6b49f';
+const TEXT = '#efe2cc';
+const BORDER = 'rgba(255, 239, 210, 0.3)';
 
 function text(ctx, value, x, y, font, color, spacing = '0px') {
   ctx.font = font;
@@ -70,12 +70,12 @@ function drawTicket(ctx, p, qr, H) {
   ctx.roundRect(0, 0, W, H, 16);
   ctx.clip();
   const bg = ctx.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, '#1a4d3e');
-  bg.addColorStop(0.5, '#0f2e25');
-  bg.addColorStop(1, '#5c1515');
+  bg.addColorStop(0, '#012265');
+  bg.addColorStop(0.5, '#0d192d');
+  bg.addColorStop(1, '#480000');
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
-  ['#7a1c1c', '#1a4d3e', '#4e8774', '#f3c430'].forEach((c, i) => {
+  ['#a20000', '#012265', '#c6b49f', '#ffefd2'].forEach((c, i) => {
     ctx.fillStyle = c;
     ctx.fillRect((W / 4) * i, 0, W / 4, 6);
   });
@@ -93,14 +93,14 @@ function drawTicket(ctx, p, qr, H) {
   text(ctx, 'PERSEKUTUAN DOA UNIVERSITAS GUNADARMA', PAD, y + 10, `600 10px ${SANS}`, GOLD, '2.5px');
   ctx.font = '700 24px Cinzel';
   const gold = ctx.createLinearGradient(PAD, 0, PAD + ctx.measureText('NATAL 2026').width + 12, 0);
-  [['#fff8dc', 0], ['#f7d660', 0.3], ['#f3c430', 0.6], ['#fff1b8', 0.85], ['#d9a614', 1]].forEach(([c, s]) =>
+  [['#fffaf0', 0], ['#ffefd2', 0.3], ['#ffefd2', 0.6], ['#fff5e3', 0.85], ['#c6b49f', 1]].forEach(([c, s]) =>
     gold.addColorStop(s, c)
   );
   text(ctx, 'NATAL 2026', PAD, y + 42, '700 24px Cinzel', gold, '1.2px');
-  text(ctx, `“${EVENT.theme}” — ${EVENT.verseRef}`, PAD, y + 60, 'italic 400 13px "Cormorant Garamond"', 'rgba(253, 241, 198, 0.8)');
+  text(ctx, `“${EVENT.theme}” — ${EVENT.verseRef}`, PAD, y + 60, 'italic 400 13px "Cormorant Garamond"', 'rgba(255, 239, 210, 0.8)');
   ctx.beginPath();
   ctx.arc(W - PAD - 22, y + 22, 22, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(243, 196, 48, 0.1)';
+  ctx.fillStyle = 'rgba(255, 239, 210, 0.1)';
   ctx.fill();
   ctx.strokeStyle = BORDER;
   ctx.stroke();
@@ -119,9 +119,9 @@ function drawTicket(ctx, p, qr, H) {
   y += 34;
   const rows = [
     ['Jenis Kelamin', p.gender, GOLD, 'Region', regionName(p.region), TEXT],
-    ['Status', p.status, TEXT, 'WhatsApp', p.whatsapp, TEXT],
+    ['Status', withAffiliation(p), TEXT, 'WhatsApp', p.whatsapp, TEXT],
     ['Kakak Komsel', p.mentorName, TEXT, 'Jurusan', p.faculty, TEXT],
-    ['Keberangkatan', p.departure, '#8cc7b1', 'Area Keberangkatan', p.departureArea, TEXT],
+    ['Keberangkatan', p.departure, '#7f9dd8', 'Area Keberangkatan', p.departureArea, TEXT],
   ];
   for (const [l1, v1, c1, l2, v2, c2] of rows) {
     y += 12;
@@ -134,7 +134,7 @@ function drawTicket(ctx, p, qr, H) {
   if (meeting) {
     y += 12;
     const lead = 'Titik kumpul: ';
-    const meetingLines = wrap(ctx, lead + meeting, inner, `400 10px ${SANS}`);
+    const meetingLines = wrap(ctx, `${lead}${meeting.place}, ${meeting.address}`, inner, `400 10px ${SANS}`);
     meetingLines.forEach((line, i) => {
       const yy = y + 10 + i * 13;
       if (i === 0) {
@@ -201,7 +201,7 @@ export async function ticketJpgBlob(p) {
   canvas.height = (H + MARGIN * 2) * SCALE;
   const ctx = canvas.getContext('2d');
   ctx.scale(SCALE, SCALE);
-  ctx.fillStyle = '#06140f';
+  ctx.fillStyle = '#0d192d';
   ctx.fillRect(0, 0, W + MARGIN * 2, H + MARGIN * 2);
   ctx.translate(MARGIN, MARGIN);
   drawTicket(ctx, p, qr, H);

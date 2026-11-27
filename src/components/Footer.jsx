@@ -11,7 +11,7 @@ const CONTACTS = [
 
 export default function Footer() {
   return (
-    <footer className="relative w-full border-t border-amber-400/10 bg-[#06140f]/85 backdrop-blur-xl py-8 sm:py-12 px-4 sm:px-6 z-20">
+    <footer className="relative w-full border-t border-amber-400/10 bg-[#0d192d]/85 backdrop-blur-xl py-8 sm:py-12 px-4 sm:px-6 z-20">
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center md:items-start justify-between gap-6 sm:gap-8 text-center md:text-left">
         {/* Contact persons (WhatsApp) */}
         <div className="space-y-2">

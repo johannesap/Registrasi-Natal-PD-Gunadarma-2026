@@ -63,6 +63,8 @@ export function toFrontend(doc) {
     gender: doc.gender || '-',
     // Registrations from before the status field (they have an email instead) show '-'
     status: doc.status || '-',
+    // Name of the media partner / student organisation / church or campus, for those statuses ('-' otherwise)
+    affiliation: doc.affiliation || '-',
     whatsapp: doc.whatsapp,
     region: doc.region,
     angkatan: doc.angkatan || '-',
@@ -100,6 +102,7 @@ export async function addRegistration(reg) {
     full_name: reg.fullName,
     gender: reg.gender,
     status: reg.status,
+    affiliation: reg.affiliation,
     whatsapp: reg.whatsapp,
     region: reg.region,
     angkatan: reg.angkatan,

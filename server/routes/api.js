@@ -8,7 +8,12 @@ import {
   GENDERS,
   STATUSES,
   STUDENT_STATUS,
+  GUNADARMA_STATUSES,
   ANGKATAN,
+  ANGKATAN_MIN,
+  ANGKATAN_MAX,
+  validAngkatan,
+  AFFILIATION_LABELS,
   DEPARTURES,
   MEETING_POINTS,
   KOMSEL_OPTIONS,
@@ -155,12 +160,17 @@ function whatsappLink(r, siteUrl) {
     `• Kode Tiket: *${r.ticketId}*\n` +
     `• Jenis Kelamin: *${r.gender}*\n` +
     `• Status: *${r.status}*\n` +
+    (AFFILIATION_LABELS[r.status] ? `• ${AFFILIATION_LABELS[r.status]}: *${r.affiliation}*\n` : '') +
     `• Region Kampus: *${regionName(r.region)}*\n` +
     `• Kakak Komsel: *${r.mentorName}*\n` +
     `• Jurusan: *${r.faculty}*\n` +
-    `• Keberangkatan: *${r.departure}${r.departureArea !== '-' ? ` (${r.departureArea})` : ''}*\n\n` +
+    // Guests are not asked how they travel
+    (r.departure !== '-' ? `• Keberangkatan: *${r.departure}${r.departureArea !== '-' ? ` (${r.departureArea})` : ''}*\n` : '') +
+    `\n` +
     (MEETING_POINTS[r.departureArea]
-      ? `🚌 *TITIK KUMPUL KEBERANGKATAN ${r.departureArea.toUpperCase()}:*\n${MEETING_POINTS[r.departureArea]}\n\n`
+      ? `🚌 *TITIK KUMPUL KEBERANGKATAN ${r.departureArea.toUpperCase()}:*\n` +
+        `*${MEETING_POINTS[r.departureArea].place}*\n` +
+        `Alamat: ${MEETING_POINTS[r.departureArea].address}\n\n`
       : '') +
     (WHATSAPP_GROUP_URL ? `👥 *GABUNG GRUP WHATSAPP PESERTA:*\n${WHATSAPP_GROUP_URL}\n\n` : '') +
     `🔳 *QR CHECK-IN* (buka & tunjukkan di pintu masuk):\n` +
@@ -192,14 +202,17 @@ router.post('/register', async (req, res) => {
   const body = req.body || {};
   const fullName = str(body.fullName);
   const gender = str(body.gender);
-  const departure = str(body.departure);
+  const status = str(body.status);
+  // Only Gunadarma students and alumni give a campus region, angkatan and departure; everyone else is '-'
+  const gunadarma = GUNADARMA_STATUSES.includes(status);
+  const region = gunadarma ? str(body.region).toLowerCase() : '-';
+  const angkatan = gunadarma ? str(body.angkatan) : '-';
+  const departure = gunadarma ? str(body.departure) : '-';
   // Only "Bersama" picks a meeting point; "Pribadi" is always '-'
   const departureArea = departure === 'Bersama' ? str(body.departureArea) : '-';
-  const status = str(body.status);
+  const affiliationLabel = AFFILIATION_LABELS[status];
+  const affiliation = affiliationLabel ? str(body.affiliation) : '-';
   const whatsapp = str(body.whatsapp).replace(/\D/g, '');
-  // Only Gunadarma students pick a campus region; everyone else is '-'
-  const region = status === STUDENT_STATUS ? str(body.region).toLowerCase() : '-';
-  const angkatan = status === STUDENT_STATUS ? str(body.angkatan) : '-';
   const komselStatus = str(body.komselStatus);
   const faculty = str(body.faculty) || '-';
 
@@ -213,17 +226,20 @@ router.post('/register', async (req, res) => {
   if (!fullName) return fail('Nama lengkap wajib diisi.');
   if (!GENDERS.includes(gender)) return fail('Pilih jenis kelamin.');
   if (!KOMSEL_OPTIONS.includes(komselStatus)) return fail('Pilih status Komsel.');
-  if (!DEPARTURES.includes(departure)) return fail('Pilih opsi keberangkatan (Pribadi / Bersama).');
-  if (departure === 'Bersama' && !MEETING_POINTS[departureArea]) return fail('Pilih area keberangkatan.');
   if (!STATUSES.includes(status)) return fail('Pilih status.');
-  if (status === STUDENT_STATUS && !CAMPUS_REGIONS.some((r) => r.id === region)) return fail('Pilih region kampus.');
+  if (gunadarma && !DEPARTURES.includes(departure)) return fail('Pilih opsi keberangkatan (Pribadi / Bersama).');
+  if (departure === 'Bersama' && !MEETING_POINTS[departureArea]) return fail('Pilih area keberangkatan.');
+  if (gunadarma && !CAMPUS_REGIONS.some((r) => r.id === region)) return fail('Pilih region kampus.');
+  // Students pick from the list, alumni type a year
   if (status === STUDENT_STATUS && !ANGKATAN.includes(angkatan)) return fail('Pilih angkatan.');
+  if (gunadarma && !validAngkatan(angkatan)) return fail(`Angkatan diisi tahun ${ANGKATAN_MIN}–${ANGKATAN_MAX}.`);
+  if (affiliationLabel && !affiliation) return fail(`${affiliationLabel} wajib diisi.`);
   if (!whatsapp) return fail('Nomor WhatsApp wajib diisi.');
   if (whatsapp.length < 9 || whatsapp.length > 13) {
     return fail('Nomor WhatsApp harus terdiri dari 9 hingga 13 digit angka.');
   }
 
-  const textFields = [fullName, str(body.mentorName), faculty];
+  const textFields = [fullName, str(body.mentorName), faculty, affiliation];
   if (textFields.some((v) => v.length > 150)) return fail('Isian terlalu panjang (maksimal 150 karakter).');
 
   // ponytail: check-then-insert; two submits in the same instant can still both insert. Fine with the
@@ -260,6 +276,7 @@ router.post('/register', async (req, res) => {
     fullName,
     gender,
     status,
+    affiliation,
     whatsapp,
     region,
     angkatan,

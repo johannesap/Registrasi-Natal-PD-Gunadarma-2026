@@ -9,6 +9,7 @@ import {
   Phone,
   Tag,
   BookOpen,
+  Building2,
   Calendar,
   Sparkles,
   CheckCircle2,
@@ -33,7 +34,12 @@ import {
   GENDERS,
   STATUSES,
   STUDENT_STATUS,
+  GUNADARMA_STATUSES,
   ANGKATAN,
+  ANGKATAN_MIN,
+  ANGKATAN_MAX,
+  AFFILIATION_LABELS,
+  withAffiliation,
   DEPARTURES,
   MEETING_POINTS,
   KOMSEL_OPTIONS,
@@ -66,7 +72,7 @@ function ChoicePills({ legend, name, options, value, onChange, icons = {} }) {
               key={opt}
               className={`flex items-center justify-center gap-2 py-3 px-3 rounded-xl border text-base sm:text-sm font-medium cursor-pointer transition-all has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-amber-400 ${
                 on
-                  ? 'border-amber-400 bg-gradient-to-br from-amber-400/25 to-rose-800/30 text-amber-100 shadow-[0_0_18px_rgba(243,196,48,0.25)]'
+                  ? 'border-amber-400 bg-gradient-to-br from-amber-400/25 to-rose-800/30 text-amber-100 shadow-[0_0_18px_rgba(255,239,210,0.25)]'
                   : 'border-white/10 bg-neutral-900/70 text-gray-300 hover:border-amber-400/40 hover:text-gray-100'
               }`}
             >
@@ -85,7 +91,7 @@ function ChoicePills({ legend, name, options, value, onChange, icons = {} }) {
 // by utils/ticketImage.js for "Simpan Tiket (JPG)": keep the two looking alike.
 function TicketCard({ p }) {
   return (
-    <div className="relative rounded-2xl overflow-hidden border border-amber-400/30 bg-gradient-to-b from-[#1a4d3e] via-[#0f2e25] to-[#5c1515] p-4 sm:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-xl">
+    <div className="relative rounded-2xl overflow-hidden border border-amber-400/30 bg-gradient-to-b from-[#012265] via-[#0d192d] to-[#480000] p-4 sm:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-xl">
       {/* Gold foil ribbon border top */}
       <div className="absolute top-0 inset-x-0 h-1.5 palette-ribbon" />
 
@@ -150,7 +156,7 @@ function TicketCard({ p }) {
               Status
             </span>
             <span className="text-gray-300 truncate block text-[11px]">
-              {p.status || '-'}
+              {withAffiliation(p) || '-'}
             </span>
           </div>
           <div>
@@ -246,6 +252,7 @@ export default function RegistrationSection() {
     fullName: '',
     gender: '',
     status: '',
+    affiliation: '-',
     whatsapp: '',
     region: '-',
     angkatan: '-',
@@ -265,14 +272,25 @@ export default function RegistrationSection() {
     const { name, value } = e.target;
 
     if (name === 'status') {
-      // Only Gunadarma students pick a campus region and angkatan; everyone else is '-'
-      const student = value === STUDENT_STATUS;
+      // Only Gunadarma students and alumni give region, angkatan and departure; everyone else is '-'.
+      // The affiliation field starts empty on every status change (a media name is not an organisation name).
+      const gunadarma = GUNADARMA_STATUSES.includes(value);
+      const keep = (v) => (gunadarma ? (v === '-' ? '' : v) : '-');
       setFormData((prev) => ({
         ...prev,
         status: value,
-        region: student ? (prev.region === '-' ? '' : prev.region) : '-',
-        angkatan: student ? (prev.angkatan === '-' ? '' : prev.angkatan) : '-',
+        region: keep(prev.region),
+        // Students pick from ANGKATAN, so a typed alumni year outside it starts over
+        angkatan: value === STUDENT_STATUS && !ANGKATAN.includes(prev.angkatan) ? '' : keep(prev.angkatan),
+        departure: keep(prev.departure),
+        departureArea: gunadarma ? prev.departureArea : '-',
+        affiliation: AFFILIATION_LABELS[value] ? '' : '-',
       }));
+      return;
+    }
+
+    if (name === 'angkatan') {
+      setFormData((prev) => ({ ...prev, angkatan: value.replace(/\D/g, '').slice(0, 4) }));
       return;
     }
 
@@ -314,6 +332,7 @@ export default function RegistrationSection() {
         fullName: formData.fullName.trim(),
         gender: formData.gender,
         status: formData.status,
+        affiliation: formData.affiliation.trim(),
         whatsapp: formData.whatsapp.trim(),
         region: formData.region,
         angkatan: formData.angkatan,
@@ -332,7 +351,7 @@ export default function RegistrationSection() {
           particleCount: 110,
           spread: 80,
           origin: { y: 0.6 },
-          colors: ['#7a1c1c', '#1a4d3e', '#4e8774', '#f3c430', '#fcfbf7'],
+          colors: ['#a20000', '#012265', '#c6b49f', '#ffefd2', '#fffaf0'],
         });
       } catch (err) {
         console.error(err);
@@ -360,7 +379,9 @@ export default function RegistrationSection() {
 
   const isBelumPunya = formData.komselStatus.includes('Belum memiliki Komsel');
   const isBersama = formData.departure === 'Bersama';
+  const isGunadarma = GUNADARMA_STATUSES.includes(formData.status);
   const isStudent = formData.status === STUDENT_STATUS;
+  const affiliationLabel = AFFILIATION_LABELS[formData.status];
 
   return (
     <section
@@ -449,9 +470,10 @@ export default function RegistrationSection() {
               onChange={handleChange}
             />
 
-            {/* Field: Status & Region Kampus (2 Columns) */}
+            {/* Field: Status, then Region Kampus + Angkatan for Gunadarma students and alumni (2 columns) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-              <div>
+              {/* Full width while there is no Region beside it */}
+              <div className={isGunadarma ? '' : 'sm:col-span-2'}>
                 <label htmlFor="reg-status" className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5 sm:mb-2">
                   Status <span className="text-rose-400">*</span>
                 </label>
@@ -482,50 +504,41 @@ export default function RegistrationSection() {
                 </div>
               </div>
 
-              <div>
-                <label htmlFor="reg-region" className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5 sm:mb-2">
-                  Region Kampus {isStudent && <span className="text-rose-400">*</span>}
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <MapPin className="w-4 h-4 text-amber-300/70" />
-                  </div>
-                  <select
-                    id="reg-region"
-                    name="region"
-                    value={formData.region}
-                    onChange={handleChange}
-                    disabled={!isStudent}
-                    required={isStudent}
-                    className={`w-full pl-10 pr-10 py-3 rounded-xl text-base sm:text-sm transition-all appearance-none ${
-                      isStudent
-                        ? 'bg-neutral-900/80 border border-white/10 text-gray-100 cursor-pointer focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400'
-                        : 'bg-neutral-800/60 border border-amber-400/30 text-amber-300 font-mono font-bold cursor-not-allowed'
-                    }`}
-                  >
-                    {isStudent ? (
-                      <>
-                        <option value="" disabled className="bg-neutral-900 text-gray-400">
-                          Pilih region kampus
+              {isGunadarma && (
+                <div>
+                  <label htmlFor="reg-region" className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5 sm:mb-2">
+                    Region Kampus <span className="text-rose-400">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                      <MapPin className="w-4 h-4 text-amber-300/70" />
+                    </div>
+                    <select
+                      id="reg-region"
+                      name="region"
+                      required
+                      value={formData.region}
+                      onChange={handleChange}
+                      className="w-full pl-10 pr-10 py-3 bg-neutral-900/80 border border-white/10 rounded-xl text-base sm:text-sm text-gray-100 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all appearance-none cursor-pointer"
+                    >
+                      <option value="" disabled className="bg-neutral-900 text-gray-400">
+                        Pilih region kampus
+                      </option>
+                      {CAMPUS_REGIONS.map((r) => (
+                        <option key={r.id} value={r.id} className="bg-neutral-900 text-gray-100">
+                          {r.name}
                         </option>
-                        {CAMPUS_REGIONS.map((r) => (
-                          <option key={r.id} value={r.id} className="bg-neutral-900 text-gray-100">
-                            {r.name}
-                          </option>
-                        ))}
-                      </>
-                    ) : (
-                      <option value="-">-</option>
-                    )}
-                  </select>
-                  <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-gray-400">
-                    <span className="text-xs">▼</span>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-gray-400">
+                      <span className="text-xs">▼</span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
-              {/* Field: Angkatan, only for Gunadarma students */}
-              {isStudent && (
+              {/* Field: Angkatan: students pick from the list, alumni type the year */}
+              {isGunadarma && (
                 <div>
                   <label htmlFor="reg-angkatan" className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5 sm:mb-2">
                     Angkatan <span className="text-rose-400">*</span>
@@ -534,26 +547,70 @@ export default function RegistrationSection() {
                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                       <Calendar className="w-4 h-4 text-amber-300/70" />
                     </div>
-                    <select
-                      id="reg-angkatan"
-                      name="angkatan"
-                      required
-                      value={formData.angkatan}
-                      onChange={handleChange}
-                      className="w-full pl-10 pr-10 py-3 bg-neutral-900/80 border border-white/10 rounded-xl text-base sm:text-sm text-gray-100 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all appearance-none cursor-pointer"
-                    >
-                      <option value="" disabled className="bg-neutral-900 text-gray-400">
-                        Pilih angkatan
-                      </option>
-                      {ANGKATAN.map((year) => (
-                        <option key={year} value={year} className="bg-neutral-900 text-gray-100">
-                          {year}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-gray-400">
-                      <span className="text-xs">▼</span>
+                    {isStudent ? (
+                      <>
+                        <select
+                          id="reg-angkatan"
+                          name="angkatan"
+                          required
+                          value={formData.angkatan}
+                          onChange={handleChange}
+                          className="w-full pl-10 pr-10 py-3 bg-neutral-900/80 border border-white/10 rounded-xl text-base sm:text-sm text-gray-100 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all appearance-none cursor-pointer"
+                        >
+                          <option value="" disabled className="bg-neutral-900 text-gray-400">
+                            Pilih angkatan
+                          </option>
+                          {ANGKATAN.map((year) => (
+                            <option key={year} value={year} className="bg-neutral-900 text-gray-100">
+                              {year}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-gray-400">
+                          <span className="text-xs">▼</span>
+                        </div>
+                      </>
+                    ) : (
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        id="reg-angkatan"
+                        name="angkatan"
+                        required
+                        pattern="[0-9]{4}"
+                        maxLength={4}
+                        title={`Tahun angkatan, 4 angka (${ANGKATAN_MIN}–${ANGKATAN_MAX})`}
+                        value={formData.angkatan}
+                        onChange={handleChange}
+                        placeholder="Contoh: 2015"
+                        className="w-full pl-10 pr-4 py-3 bg-neutral-900/70 border border-white/10 rounded-xl text-base sm:text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all font-mono"
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Field: name of the media partner / organisation / church or campus, for those statuses */}
+              {affiliationLabel && (
+                <div className="sm:col-span-2">
+                  <label htmlFor="reg-affiliation" className="block text-xs font-semibold tracking-wider text-amber-200/90 uppercase mb-1.5 sm:mb-2">
+                    {affiliationLabel} <span className="text-rose-400">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                      <Building2 className="w-4 h-4 text-amber-300/70" />
                     </div>
+                    <input
+                      type="text"
+                      id="reg-affiliation"
+                      name="affiliation"
+                      required
+                      maxLength={150}
+                      value={formData.affiliation}
+                      onChange={handleChange}
+                      placeholder={`Tuliskan ${affiliationLabel.toLowerCase()}`}
+                      className="w-full pl-10 pr-4 py-3 bg-neutral-900/70 border border-white/10 rounded-xl text-base sm:text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-all"
+                    />
                   </div>
                 </div>
               )}
@@ -659,7 +716,8 @@ export default function RegistrationSection() {
               </div>
             </div>
 
-            {/* Field: Opsi Keberangkatan & Area */}
+            {/* Field: Opsi Keberangkatan & Area, only for Gunadarma students and alumni (the bus is for them) */}
+            {isGunadarma && (
             <div className="space-y-3 p-3.5 sm:p-4 rounded-xl bg-emerald-950/40 border border-emerald-400/25">
               <ChoicePills
                 legend="Opsi Keberangkatan"
@@ -714,6 +772,7 @@ export default function RegistrationSection() {
                 </div>
               </div>
             </div>
+            )}
 
             {submitError && (
               <div
@@ -730,7 +789,7 @@ export default function RegistrationSection() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="gold-btn w-full py-4 rounded-xl font-semibold text-neutral-950 text-sm tracking-widest uppercase cursor-pointer flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(245,208,97,0.35)]"
+                className="gold-btn w-full py-4 rounded-xl font-semibold text-neutral-950 text-sm tracking-widest uppercase cursor-pointer flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(255,239,210,0.35)]"
               >
                 {isSubmitting ? (
                   <>
@@ -817,7 +876,7 @@ export default function RegistrationSection() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="glass-panel max-w-lg w-full max-h-[92vh] overflow-y-auto rounded-2xl p-4 sm:p-7 md:p-8 text-center relative border border-amber-400/40 shadow-[0_0_60px_rgba(245,208,97,0.3)] my-auto"
+              className="glass-panel max-w-lg w-full max-h-[92vh] overflow-y-auto rounded-2xl p-4 sm:p-7 md:p-8 text-center relative border border-amber-400/40 shadow-[0_0_60px_rgba(255,239,210,0.3)] my-auto"
             >
               {/* Close Button */}
               <button
@@ -873,11 +932,12 @@ export default function RegistrationSection() {
                     <span>Titik Kumpul Keberangkatan</span>
                   </div>
                   <p className="text-lg font-['Cinzel'] font-bold text-white">{registered.departureArea}</p>
+                  <p className="text-sm font-semibold text-amber-100 mt-1">{MEETING_POINTS[registered.departureArea].place}</p>
                   <p className="text-xs text-gray-200 leading-relaxed mt-1">
-                    <span className="text-gray-400">Alamat:</span> {MEETING_POINTS[registered.departureArea]}
+                    <span className="text-gray-400">Alamat:</span> {MEETING_POINTS[registered.departureArea].address}
                   </p>
                   <a
-                    href={mapsUrl(MEETING_POINTS[registered.departureArea])}
+                    href={mapsUrl(MEETING_POINTS[registered.departureArea].address)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-full text-[11px] font-semibold text-emerald-950 bg-emerald-300 hover:bg-emerald-200 transition-colors"
@@ -907,13 +967,22 @@ export default function RegistrationSection() {
                   <span className="text-gray-400">Kakak Komsel:</span>
                   <span className="text-white">{registered.mentorName}</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Keberangkatan:</span>
-                  <span className="text-white">
-                    {registered.departure}
-                    {registered.departureArea !== '-' && ` (${registered.departureArea})`}
-                  </span>
-                </div>
+                {AFFILIATION_LABELS[registered.status] && (
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-gray-400 shrink-0">{AFFILIATION_LABELS[registered.status]}:</span>
+                    <span className="text-white text-right">{registered.affiliation}</span>
+                  </div>
+                )}
+                {/* Guests are not asked how they travel */}
+                {registered.departure !== '-' && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-400">Keberangkatan:</span>
+                    <span className="text-white">
+                      {registered.departure}
+                      {registered.departureArea !== '-' && ` (${registered.departureArea})`}
+                    </span>
+                  </div>
+                )}
                 <div className="pt-1.5 mt-1.5 border-t border-white/10 text-center text-gray-300">
                   {EVENT.date} • {EVENT.time} • {EVENT.venue}
                 </div>
@@ -926,7 +995,7 @@ export default function RegistrationSection() {
                   href={registered.dispatch.whatsappUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full py-3 rounded-xl font-semibold text-emerald-950 bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-400 hover:brightness-105 text-xs tracking-wider uppercase flex items-center justify-center gap-2 cursor-pointer transition-all shadow-[0_0_20px_rgba(52,211,153,0.3)]"
+                  className="w-full py-3 rounded-xl font-semibold text-emerald-950 bg-gradient-to-r from-emerald-400 via-emerald-300 to-emerald-400 hover:brightness-105 text-xs tracking-wider uppercase flex items-center justify-center gap-2 cursor-pointer transition-all shadow-[0_0_20px_rgba(127,157,216,0.3)]"
                 >
                   <MessageSquare className="w-4 h-4 fill-emerald-950" />
                   <span>Buka Salinan Tiket di WhatsApp</span>

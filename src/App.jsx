@@ -69,12 +69,12 @@ export default function App() {
         <div
           className="absolute inset-0"
           style={{
-            // First layer paints on top: the palette glows go above the opaque pine base
+            // First layer paints on top: red glows at both edges like the poster's curtains, over a navy base
             background:
-              'radial-gradient(circle at 12% 45%, rgba(78, 135, 116, 0.22) 0%, transparent 45%), ' +
-              'radial-gradient(circle at 88% 65%, rgba(122, 28, 28, 0.32) 0%, transparent 45%), ' +
-              'radial-gradient(circle at 50% 28%, rgba(243, 196, 48, 0.1) 0%, transparent 60%), ' +
-              'radial-gradient(ellipse at 50% 12%, #1a4d3e 0%, #0b241d 50%, #06140f 100%)',
+              'radial-gradient(circle at 0% 55%, rgba(162, 0, 0, 0.3) 0%, transparent 40%), ' +
+              'radial-gradient(circle at 100% 45%, rgba(162, 0, 0, 0.3) 0%, transparent 40%), ' +
+              'radial-gradient(circle at 50% 28%, rgba(255, 239, 210, 0.08) 0%, transparent 60%), ' +
+              'radial-gradient(ellipse at 50% 12%, #012265 0%, #0d192d 55%, #000000 100%)',
           }}
         />
 
@@ -82,7 +82,7 @@ export default function App() {
         <div
           className="hidden md:block absolute top-24 left-1/2 -translate-x-1/2 w-[550px] h-[380px] rounded-full opacity-25 pointer-events-none blur-3xl transform-gpu"
           style={{
-            background: 'radial-gradient(circle, rgba(252, 251, 247, 0.28) 0%, rgba(243, 196, 48, 0.16) 40%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(255, 250, 240, 0.28) 0%, rgba(255, 239, 210, 0.16) 40%, transparent 70%)',
           }}
         />
 

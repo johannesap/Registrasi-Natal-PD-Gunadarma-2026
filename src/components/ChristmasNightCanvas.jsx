@@ -39,9 +39,9 @@ export default function ChristmasNightCanvas() {
     emberSprite.height = 32;
     const eCtx = emberSprite.getContext('2d');
     const eGrad = eCtx.createRadialGradient(16, 16, 0, 16, 16, 16);
-    eGrad.addColorStop(0, 'rgba(255, 245, 180, 0.95)');
-    eGrad.addColorStop(0.35, 'rgba(243, 196, 48, 0.45)');
-    eGrad.addColorStop(1, 'rgba(220, 171, 23, 0)');
+    eGrad.addColorStop(0, 'rgba(255, 239, 210, 0.95)');
+    eGrad.addColorStop(0.35, 'rgba(255, 239, 210, 0.45)');
+    eGrad.addColorStop(1, 'rgba(198, 180, 159, 0)');
     eCtx.fillStyle = eGrad;
     eCtx.beginPath();
     eCtx.arc(16, 16, 16, 0, Math.PI * 2);
@@ -53,8 +53,8 @@ export default function ChristmasNightCanvas() {
     const sCtx = snowSprite.getContext('2d');
     const sGrad = sCtx.createRadialGradient(12, 12, 0, 12, 12, 12);
     sGrad.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
-    sGrad.addColorStop(0.5, 'rgba(252, 251, 247, 0.35)');
-    sGrad.addColorStop(1, 'rgba(252, 251, 247, 0)');
+    sGrad.addColorStop(0.5, 'rgba(255, 250, 240, 0.35)');
+    sGrad.addColorStop(1, 'rgba(255, 250, 240, 0)');
     sCtx.fillStyle = sGrad;
     sCtx.beginPath();
     sCtx.arc(12, 12, 12, 0, Math.PI * 2);

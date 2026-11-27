@@ -27,7 +27,7 @@ export default function HeroSection({ onStartRegistration }) {
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[320px] sm:w-[600px] h-[320px] sm:h-[600px] rounded-full pointer-events-none -z-10 transform-gpu"
         style={{
           background:
-            'radial-gradient(circle, rgba(245, 208, 97, 0.16) 0%, rgba(220, 38, 38, 0.06) 40%, transparent 70%)',
+            'radial-gradient(circle, rgba(255, 239, 210, 0.16) 0%, rgba(162, 0, 0, 0.06) 40%, transparent 70%)',
           willChange: 'opacity, transform',
         }}
       />
@@ -72,7 +72,7 @@ export default function HeroSection({ onStartRegistration }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.9, delay: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className="mb-2 sm:mb-3 text-base sm:text-xl md:text-2xl xl:text-3xl font-['Cinzel'] font-bold tracking-[0.25em] uppercase text-gold-gradient transform-gpu"
-          style={{ willChange: 'transform, opacity', textShadow: '0 0 12px rgba(254, 240, 138, 0.3)' }}
+          style={{ willChange: 'transform, opacity', textShadow: '0 0 12px rgba(255, 239, 210, 0.3)' }}
         >
           Ibadah dan Perayaan
         </motion.div>
@@ -101,7 +101,7 @@ export default function HeroSection({ onStartRegistration }) {
             className="text-5xl sm:text-7xl md:text-8xl xl:text-[10rem] xl:[@media(max-height:820px)]:text-8xl font-extrabold tracking-wide sm:tracking-wider font-['Cinzel'] leading-none text-gold-gradient uppercase py-1 select-none whitespace-nowrap"
             style={{
               textShadow:
-                '0 0 20px rgba(254, 240, 138, 0.35), 0 0 50px rgba(234, 179, 8, 0.2)',
+                '0 0 20px rgba(255, 239, 210, 0.35), 0 0 50px rgba(198, 180, 159, 0.2)',
             }}
           >
             NATAL 2026
@@ -183,7 +183,7 @@ export default function HeroSection({ onStartRegistration }) {
           <button
             onClick={handleStartRegistration}
             type="button"
-            className="gold-btn group w-full max-w-xs sm:max-w-none sm:w-auto px-7 sm:px-11 py-3.5 sm:py-4.5 rounded-full font-sans font-semibold text-neutral-950 text-xs sm:text-base tracking-widest uppercase cursor-pointer flex items-center justify-center gap-2.5 sm:gap-3 shadow-[0_0_30px_rgba(245,208,97,0.45)] hover:shadow-[0_0_50px_rgba(245,208,97,0.8)]"
+            className="gold-btn group w-full max-w-xs sm:max-w-none sm:w-auto px-7 sm:px-11 py-3.5 sm:py-4.5 rounded-full font-sans font-semibold text-neutral-950 text-xs sm:text-base tracking-widest uppercase cursor-pointer flex items-center justify-center gap-2.5 sm:gap-3 shadow-[0_0_30px_rgba(255,239,210,0.45)] hover:shadow-[0_0_50px_rgba(255,239,210,0.8)]"
           >
             <span>MULAI REGISTRASI</span>
             <span className="w-2 h-2 rounded-full bg-amber-950/70 group-hover:scale-150 transition-transform shrink-0" />

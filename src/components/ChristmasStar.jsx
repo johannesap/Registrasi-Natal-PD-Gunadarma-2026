@@ -10,7 +10,7 @@ export default function ChristmasStar() {
       className="relative flex items-center justify-center pointer-events-none select-none"
     >
       {/* 1. Deep Celestial Warm Center Bloom */}
-      <div className="absolute w-52 h-52 sm:w-72 sm:h-72 md:w-96 md:h-96 rounded-full bg-gradient-to-r from-amber-400/25 via-yellow-200/20 to-transparent blur-3xl -z-10 animate-gold-breath" />
+      <div className="absolute w-52 h-52 sm:w-72 sm:h-72 md:w-96 md:h-96 rounded-full bg-gradient-to-r from-amber-400/25 via-amber-200/20 to-transparent blur-3xl -z-10 animate-gold-breath" />
       
       {/* 2. Soft Red & Emerald Ambient Radiance (Sacred Christmas Colors) */}
       <div className="absolute w-56 sm:w-80 h-24 sm:h-32 rounded-full bg-rose-600/10 blur-2xl sm:blur-3xl -z-10" />
@@ -21,10 +21,10 @@ export default function ChristmasStar() {
         <svg viewBox="0 0 200 200" className="w-full h-full">
           <defs>
             <radialGradient id="rayGrad" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#fffdf0" stopOpacity="0.9" />
-              <stop offset="35%" stopColor="#f5d061" stopOpacity="0.5" />
-              <stop offset="70%" stopColor="#d4af37" stopOpacity="0.2" />
-              <stop offset="100%" stopColor="#d4af37" stopOpacity="0" />
+              <stop offset="0%" stopColor="#fffaf0" stopOpacity="0.9" />
+              <stop offset="35%" stopColor="#ffefd2" stopOpacity="0.5" />
+              <stop offset="70%" stopColor="#c6b49f" stopOpacity="0.2" />
+              <stop offset="100%" stopColor="#c6b49f" stopOpacity="0" />
             </radialGradient>
           </defs>
           {/* Delicate light flares */}
@@ -53,7 +53,7 @@ export default function ChristmasStar() {
               y1="100"
               x2="175"
               y2="100"
-              stroke="#FFF5C0"
+              stroke="#fff5e3"
               strokeWidth="0.5"
               strokeDasharray="4 8"
               transform={`rotate(${deg} 100 100)`}
@@ -66,19 +66,19 @@ export default function ChristmasStar() {
       <div className="relative w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-36 animate-pulse-glow flex items-center justify-center">
         <svg
           viewBox="0 0 200 200"
-          className="w-full h-full drop-shadow-[0_0_25px_rgba(245,208,97,0.9)]"
+          className="w-full h-full drop-shadow-[0_0_25px_rgba(255,239,210,0.9)]"
         >
           <defs>
             <linearGradient id="starGoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#FFFFFF" />
-              <stop offset="30%" stopColor="#FFF9D2" />
-              <stop offset="60%" stopColor="#F5D061" />
-              <stop offset="100%" stopColor="#E6B325" />
+              <stop offset="30%" stopColor="#fffaf0" />
+              <stop offset="60%" stopColor="#ffefd2" />
+              <stop offset="100%" stopColor="#c6b49f" />
             </linearGradient>
             <radialGradient id="centerCoreGrad" cx="50%" cy="50%" r="50%">
               <stop offset="0%" stopColor="#FFFFFF" stopOpacity="1" />
-              <stop offset="50%" stopColor="#FFF2A8" stopOpacity="0.8" />
-              <stop offset="100%" stopColor="#F5D061" stopOpacity="0" />
+              <stop offset="50%" stopColor="#fff5e3" stopOpacity="0.8" />
+              <stop offset="100%" stopColor="#ffefd2" stopOpacity="0" />
             </radialGradient>
           </defs>
 

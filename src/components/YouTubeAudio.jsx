@@ -23,8 +23,8 @@ export default function YouTubeAudio() {
       type="button"
       className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-full text-xs font-semibold tracking-wider transition-all duration-300 backdrop-blur-md border cursor-pointer group shadow-sm shrink-0 ${
         isPlaying
-          ? 'bg-gradient-to-r from-amber-500/30 via-red-500/20 to-amber-600/30 border-amber-400 text-amber-200 shadow-[0_0_20px_rgba(245,208,97,0.45)]'
-          : 'bg-white/10 hover:bg-white/15 border-amber-400/30 text-amber-100 hover:border-amber-400/60 shadow-[0_0_12px_rgba(245,208,97,0.15)] animate-pulse'
+          ? 'bg-gradient-to-r from-amber-500/30 via-rose-500/20 to-amber-600/30 border-amber-400 text-amber-200 shadow-[0_0_20px_rgba(255,239,210,0.45)]'
+          : 'bg-white/10 hover:bg-white/15 border-amber-400/30 text-amber-100 hover:border-amber-400/60 shadow-[0_0_12px_rgba(255,239,210,0.15)] animate-pulse'
       }`}
       title={isPlaying ? 'Jeda Musik Natal (Jesus It Is You)' : 'Putar Musik Natal (Jesus It Is You)'}
       aria-label={isPlaying ? 'Jeda Musik Natal' : 'Putar Musik Natal'}

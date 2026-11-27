@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { regionName } from '../utils/regions';
+import { withAffiliation } from '../utils/event';
 
 const HEADERS = [
   'No',
@@ -62,7 +63,7 @@ export default function ParticipantPdf({ at, rows, onDone }) {
               <td>{r.ticketId}</td>
               <td>{r.fullName}</td>
               <td>{r.gender}</td>
-              <td>{r.status}</td>
+              <td>{withAffiliation(r)}</td>
               <td>{r.whatsapp}</td>
               <td>{regionName(r.region)}</td>
               <td>{r.komselStatus?.replace(/\s*\(.*\)$/, '')}</td>

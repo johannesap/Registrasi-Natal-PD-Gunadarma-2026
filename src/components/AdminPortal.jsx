@@ -21,6 +21,7 @@ import {
   Phone,
   Tag,
   Bus,
+  Car,
   FileText,
   AlertCircle,
 } from 'lucide-react';
@@ -35,6 +36,7 @@ import {
   logoutAdmin,
 } from '../utils/storage';
 import { REGIONS, regionName } from '../utils/regions';
+import { AFFILIATION_LABELS, withAffiliation } from '../utils/event';
 import { intlPhone } from '../utils/phone';
 import AccountManager from './AccountManager';
 import ChangePasswordDialog from './ChangePasswordDialog';
@@ -46,6 +48,7 @@ import PanelSidebar from './PanelSidebar';
 const SEKRETARIAT_VIEWS = [
   { id: 'dashboard', label: 'Data Peserta', icon: Users },
   { id: 'bus', label: 'Data Bus', icon: Bus },
+  { id: 'pribadi', label: 'Keberangkatan Pribadi', icon: Car },
 ];
 
 export default function AdminPortal({ onBackToHome }) {
@@ -68,7 +71,7 @@ export default function AdminPortal({ onBackToHome }) {
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
-  const [view, setView] = useState('dashboard'); // 'dashboard' | 'bus'
+  const [view, setView] = useState('dashboard'); // 'dashboard' | 'bus' | 'pribadi'
   const [printJob, setPrintJob] = useState(null); // { at, rows } while the "Export PDF" print dialog is open
 
   // admin only manages accounts; sekretariat gets the registrations dashboard
@@ -205,6 +208,7 @@ export default function AdminPortal({ onBackToHome }) {
         item.fullName?.toLowerCase().includes(q) ||
         item.departureArea?.toLowerCase().includes(q) ||
         item.status?.toLowerCase().includes(q) ||
+        item.affiliation?.toLowerCase().includes(q) ||
         item.whatsapp?.toLowerCase().includes(q) ||
         item.ticketId?.toLowerCase().includes(q) ||
         item.mentorName?.toLowerCase().includes(q) ||
@@ -290,7 +294,7 @@ export default function AdminPortal({ onBackToHome }) {
 
             {/* Header */}
             <div className="text-center mb-6">
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-400/20 via-amber-500/10 to-transparent border border-amber-400/30 flex items-center justify-center mx-auto mb-3 shadow-[0_0_20px_rgba(245,208,97,0.25)] transform-gpu">
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-400/20 via-amber-500/10 to-transparent border border-amber-400/30 flex items-center justify-center mx-auto mb-3 shadow-[0_0_20px_rgba(255,239,210,0.25)] transform-gpu">
                 <ShieldCheck className="w-7 h-7 text-amber-300" />
               </div>
               <span className="text-[11px] font-semibold tracking-[0.25em] uppercase text-amber-300 block mb-1">
@@ -373,7 +377,7 @@ export default function AdminPortal({ onBackToHome }) {
               <button
                 type="submit"
                 disabled={isLoggingIn}
-                className="gold-btn w-full py-3.5 rounded-xl font-semibold text-neutral-950 text-xs tracking-widest uppercase cursor-pointer flex items-center justify-center gap-2 mt-2 shadow-[0_0_20px_rgba(245,208,97,0.3)] transform-gpu"
+                className="gold-btn w-full py-3.5 rounded-xl font-semibold text-neutral-950 text-xs tracking-widest uppercase cursor-pointer flex items-center justify-center gap-2 mt-2 shadow-[0_0_20px_rgba(255,239,210,0.3)] transform-gpu"
               >
                 {isLoggingIn ? (
                   <>
@@ -417,8 +421,13 @@ export default function AdminPortal({ onBackToHome }) {
 
         <div className="flex-1 min-w-0 px-3 sm:px-6 lg:px-8 py-6 sm:py-10">
           <div className="max-w-7xl mx-auto space-y-6">
-          {view === 'bus' ? (
-            <BusData registrations={registrations} onSetBus={handleSetBus} />
+          {view === 'bus' || view === 'pribadi' ? (
+            <BusData
+              key={view}
+              registrations={registrations}
+              departure={view === 'bus' ? 'Bersama' : 'Pribadi'}
+              onSetBus={handleSetBus}
+            />
           ) : (
             <>
         {/* Top Header Bar */}
@@ -697,7 +706,9 @@ export default function AdminPortal({ onBackToHome }) {
                       <td className="py-3.5 px-4">
                         <div className="font-semibold text-white">{row.fullName}</div>
                         <div className="text-[11px] text-gray-400">
-                          {row.gender} • {row.departure}
+                          {row.gender}
+                          {/* Guests are not asked how they travel */}
+                          {row.departure !== '-' && ` • ${row.departure}`}
                           {row.departureArea !== '-' && ` (${row.departureArea})`}
                         </div>
                         <div className="md:hidden text-[11px] font-mono text-amber-300">{row.ticketId}</div>
@@ -720,7 +731,7 @@ export default function AdminPortal({ onBackToHome }) {
                         </div>
                         <div className="flex items-center gap-1.5 text-gray-400 text-[11px] truncate max-w-[170px]">
                           <Tag className="w-3 h-3 text-amber-300 shrink-0" />
-                          <span className="truncate">{row.status}</span>
+                          <span className="truncate" title={withAffiliation(row)}>{withAffiliation(row)}</span>
                         </div>
                       </td>
                       <td className="hidden md:table-cell py-3.5 px-4">
@@ -816,7 +827,7 @@ export default function AdminPortal({ onBackToHome }) {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.96 }}
               transition={{ duration: 0.25, ease: 'easeOut' }}
-              className="glass-panel max-w-md w-full rounded-2xl p-6 relative border border-amber-400/40 my-auto shadow-xl sm:shadow-[0_0_50px_rgba(245,208,97,0.3)] transform-gpu"
+              className="glass-panel max-w-md w-full rounded-2xl p-6 relative border border-amber-400/40 my-auto shadow-xl sm:shadow-[0_0_50px_rgba(255,239,210,0.3)] transform-gpu"
               style={{ willChange: 'transform, opacity' }}
             >
               <button
@@ -834,7 +845,7 @@ export default function AdminPortal({ onBackToHome }) {
               </div>
 
               {/* Pass Card Preview */}
-              <div className="rounded-xl p-4 bg-gradient-to-b from-[#1a4d3e] via-[#0f2e25] to-[#5c1515] border border-amber-400/30 space-y-3 text-xs mb-5">
+              <div className="rounded-xl p-4 bg-gradient-to-b from-[#012265] via-[#0d192d] to-[#480000] border border-amber-400/30 space-y-3 text-xs mb-5">
                 <div className="flex items-center justify-between border-b border-white/10 pb-2">
                   <span className="font-bold text-amber-300 font-['Cinzel']">NATAL PD UG 2026</span>
                   <span className="font-mono text-emerald-400 text-[11px] font-semibold">
@@ -872,6 +883,15 @@ export default function AdminPortal({ onBackToHome }) {
                     <span className="text-white truncate block">{selectedParticipant.status}</span>
                   </div>
                 </div>
+
+                {AFFILIATION_LABELS[selectedParticipant.status] && (
+                  <div>
+                    <span className="text-[10px] text-gray-400 uppercase block">
+                      {AFFILIATION_LABELS[selectedParticipant.status]}
+                    </span>
+                    <span className="text-white">{selectedParticipant.affiliation}</span>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
@@ -939,7 +959,7 @@ export default function AdminPortal({ onBackToHome }) {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.96 }}
               transition={{ duration: 0.25, ease: 'easeOut' }}
-              className="glass-panel max-w-sm w-full rounded-2xl p-6 text-center border border-rose-500/40 my-auto shadow-xl sm:shadow-[0_0_40px_rgba(244,63,94,0.3)] transform-gpu"
+              className="glass-panel max-w-sm w-full rounded-2xl p-6 text-center border border-rose-500/40 my-auto shadow-xl sm:shadow-[0_0_40px_rgba(192,32,32,0.3)] transform-gpu"
               style={{ willChange: 'transform, opacity' }}
             >
               <div className="w-12 h-12 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center mx-auto mb-3">
