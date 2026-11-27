@@ -71,14 +71,14 @@ export const addRegistration = async (registration) => {
   return { ...result.data, dispatch: result.dispatch, alreadyRegistered: result.alreadyRegistered };
 };
 
-// Set check-in to the wanted state and return the updated participant
-export const setCheckIn = async (ticketId, checkedIn) =>
-  (
-    await apiFetch(`/registrations/${encodeURIComponent(ticketId)}/checkin`, {
-      method: 'PATCH',
-      body: { checkedIn },
-    })
-  ).data;
+// Set check-in to the wanted state: { participant, alreadyCheckedIn } (true when another scan got there first)
+export const setCheckIn = async (ticketId, checkedIn) => {
+  const result = await apiFetch(`/registrations/${encodeURIComponent(ticketId)}/checkin`, {
+    method: 'PATCH',
+    body: { checkedIn },
+  });
+  return { participant: result.data, alreadyCheckedIn: Boolean(result.alreadyCheckedIn) };
+};
 
 // Bus attendance on Data Bus: set leg ('berangkat' | 'pulang') to value and return the updated participant
 export const setBusAttendance = async (ticketId, leg, value) =>

@@ -22,8 +22,8 @@ export const GENDERS = ['Laki-laki', 'Perempuan'];
 export const STUDENT_STATUS = 'Mahasiswa Gunadarma';
 export const ALUMNI_STATUS = 'Alumni Gunadarma';
 
-// Only Gunadarma students and alumni give a campus region, angkatan and departure (the bus is for them);
-// every other status stores '-' for all of these
+// Only Gunadarma students and alumni give a campus region and angkatan; every other status stores '-' for both.
+// Everyone picks a departure (Pribadi / Bersama).
 export const GUNADARMA_STATUSES = [STUDENT_STATUS, ALUMNI_STATUS];
 
 // Students pick their angkatan from this list

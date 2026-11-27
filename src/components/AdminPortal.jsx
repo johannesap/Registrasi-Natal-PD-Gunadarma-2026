@@ -133,10 +133,10 @@ export default function AdminPortal({ onBackToHome }) {
   };
 
   const saveCheckIn = async (ticketId, checkedIn) => {
-    const updated = await setCheckIn(ticketId, checkedIn);
+    const { participant: updated, alreadyCheckedIn } = await setCheckIn(ticketId, checkedIn);
     setRegistrations((list) => list.map((r) => (r.ticketId === updated.ticketId ? updated : r)));
     setSelectedParticipant((p) => (p?.ticketId === updated.ticketId ? updated : p));
-    return updated;
+    return { updated, alreadyCheckedIn };
   };
 
   // Sends the wanted state, not "flip", so a double tap cannot undo a check-in
@@ -168,13 +168,13 @@ export default function AdminPortal({ onBackToHome }) {
     }
     code = code.trim().toUpperCase();
 
-    // ponytail: "already" uses this device's list; a ticket checked in on another phone since the last Refresh shows as HADIR
-    const known = registrations.find((r) => r.ticketId === code);
-    if (known?.isCheckedIn) {
-      return { ok: false, text: `${known.fullName} sudah check-in sebelumnya (${known.checkedInAt}).` };
-    }
+    // The server says whether this ticket was already checked in, at any desk, so a shared screenshot is caught everywhere
     try {
-      const updated = await saveCheckIn(code, true);
+      const { updated, alreadyCheckedIn } = await saveCheckIn(code, true);
+      if (alreadyCheckedIn) {
+        const by = updated.checkedInBy ? `, oleh ${updated.checkedInBy}` : '';
+        return { ok: false, text: `${updated.fullName} SUDAH check-in sebelumnya (${updated.checkedInAt}${by}).` };
+      }
       return { ok: true, text: `HADIR: ${updated.fullName}` };
     } catch (err) {
       if (err.status === 401) handleSessionExpired(err);
@@ -706,9 +706,7 @@ export default function AdminPortal({ onBackToHome }) {
                       <td className="py-3.5 px-4">
                         <div className="font-semibold text-white">{row.fullName}</div>
                         <div className="text-[11px] text-gray-400">
-                          {row.gender}
-                          {/* Guests are not asked how they travel */}
-                          {row.departure !== '-' && ` • ${row.departure}`}
+                          {row.gender} • {row.departure}
                           {row.departureArea !== '-' && ` (${row.departureArea})`}
                         </div>
                         <div className="md:hidden text-[11px] font-mono text-amber-300">{row.ticketId}</div>

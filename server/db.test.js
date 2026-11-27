@@ -139,6 +139,7 @@ test('Pribadi always stores area "-"; Bersama needs a known area', { skip }, asy
     { status: 'Alumni Gunadarma', angkatan: '20x4' },
     { status: 'Alumni Gunadarma', region: '-' },
     { status: 'Alumni Gunadarma', departure: '' },
+    { status: 'Umum (di luar Gunadarma)', departure: '' }, // every status picks a departure
     { status: 'Media Partner' }, // without the media partner's name
   ]) {
     // Own network, so these do not use up the 20-a-minute limit the other tests register under
@@ -146,7 +147,7 @@ test('Pribadi always stores area "-"; Bersama needs a known area', { skip }, asy
   }
 });
 
-test('students and alumni keep region, angkatan and departure; other statuses store "-" and their affiliation', { skip }, async () => {
+test('students and alumni keep region and angkatan; other statuses store "-" there, and their affiliation; all keep departure', { skip }, async () => {
   const alumni = (await (await register({ ...person, whatsapp: '081299990004', status: 'Alumni Gunadarma', angkatan: '1998' })).json()).data;
   await deleteRegistration(alumni.ticketId);
   assert.deepEqual([alumni.region, alumni.angkatan, alumni.departure, alumni.affiliation], ['depok', '1998', 'Bersama', '-']);
@@ -156,9 +157,9 @@ test('students and alumni keep region, angkatan and departure; other statuses st
   ).json();
   await deleteRegistration(media.data.ticketId);
   const d = media.data;
-  assert.deepEqual([d.region, d.angkatan, d.departure, d.departureArea, d.affiliation], ['-', '-', '-', '-', 'Kompas']);
+  assert.deepEqual([d.region, d.angkatan, d.departure, d.departureArea, d.affiliation], ['-', '-', 'Bersama', 'Depok', 'Kompas']);
   assert.match(decodeURIComponent(media.dispatch.whatsappUrl), /Nama Media Partner: \*Kompas\*/);
-  assert.doesNotMatch(decodeURIComponent(media.dispatch.whatsappUrl), /Keberangkatan:/);
+  assert.match(decodeURIComponent(media.dispatch.whatsappUrl), /Keberangkatan: \*Bersama \(Depok\)\*/);
 
   // Umum gives no affiliation even if one is sent
   const umum = (await (await register({ ...person, whatsapp: '081299990007', status: 'Umum (di luar Gunadarma)', affiliation: 'x' })).json()).data;
@@ -198,8 +199,10 @@ test('a successful login clears earlier wrong passwords', { skip }, async () => 
   assert.equal((await login('tes-lupa', 'bukan-ini-123')).status, 401, 'counting starts again from zero');
 });
 
-test('checking in twice keeps the first check-in time', { skip }, async () => {
-  await setCheckIn(ticketId, true);
+test('checking in twice keeps the first check-in and flags the repeat, from any desk', { skip }, async () => {
+  const first = await setCheckIn(ticketId, true, 'meja1');
+  assert.equal(first.wasCheckedIn, false);
+  assert.equal(first.checkedInBy, 'meja1');
 
   // Move the first check-in an hour back, so a second call that overwrote it would show
   const client = await new MongoClient(process.env.MONGODB_URI).connect();
@@ -207,8 +210,11 @@ test('checking in twice keeps the first check-in time', { skip }, async () => {
   const earlier = new Date(Date.now() - 60 * 60 * 1000);
   await col.updateOne({ ticket_id: ticketId }, { $set: { checked_in_at: earlier } });
 
-  const again = await setCheckIn(ticketId, true);
+  // Same QR at another desk (a shared screenshot)
+  const again = await setCheckIn(ticketId, true, 'meja3');
   assert.equal(again.isCheckedIn, true);
+  assert.equal(again.wasCheckedIn, true);
+  assert.equal(again.checkedInBy, 'meja1');
   const stored = await col.findOne({ ticket_id: ticketId });
   await client.close();
   assert.equal(stored.checked_in_at.getTime(), earlier.getTime());
@@ -216,6 +222,12 @@ test('checking in twice keeps the first check-in time', { skip }, async () => {
   const undone = await setCheckIn(ticketId, false);
   assert.equal(undone.isCheckedIn, false);
   assert.equal(undone.checkedInAt, null);
+  assert.equal(undone.checkedInBy, null);
+
+  // Two desks scanning the same ticket at the same moment: exactly one gets the first check-in
+  const both = await Promise.all([setCheckIn(ticketId, true, 'meja1'), setCheckIn(ticketId, true, 'meja2')]);
+  assert.equal(both.filter((r) => !r.wasCheckedIn).length, 1);
+  await setCheckIn(ticketId, false);
 });
 
 test('sekretariat sees registrations but not accounts; admin the other way round', { skip }, async () => {

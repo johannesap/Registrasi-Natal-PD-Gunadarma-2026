@@ -164,9 +164,7 @@ function whatsappLink(r, siteUrl) {
     `• Region Kampus: *${regionName(r.region)}*\n` +
     `• Kakak Komsel: *${r.mentorName}*\n` +
     `• Jurusan: *${r.faculty}*\n` +
-    // Guests are not asked how they travel
-    (r.departure !== '-' ? `• Keberangkatan: *${r.departure}${r.departureArea !== '-' ? ` (${r.departureArea})` : ''}*\n` : '') +
-    `\n` +
+    `• Keberangkatan: *${r.departure}${r.departureArea !== '-' ? ` (${r.departureArea})` : ''}*\n\n` +
     (MEETING_POINTS[r.departureArea]
       ? `🚌 *TITIK KUMPUL KEBERANGKATAN ${r.departureArea.toUpperCase()}:*\n` +
         `*${MEETING_POINTS[r.departureArea].place}*\n` +
@@ -205,11 +203,11 @@ router.post('/register', async (req, res) => {
   const fullName = str(body.fullName);
   const gender = str(body.gender);
   const status = str(body.status);
-  // Only Gunadarma students and alumni give a campus region, angkatan and departure; everyone else is '-'
+  // Only Gunadarma students and alumni give a campus region and angkatan; everyone else is '-'
   const gunadarma = GUNADARMA_STATUSES.includes(status);
   const region = gunadarma ? str(body.region).toLowerCase() : '-';
   const angkatan = gunadarma ? str(body.angkatan) : '-';
-  const departure = gunadarma ? str(body.departure) : '-';
+  const departure = str(body.departure);
   // Only "Bersama" picks a meeting point; "Pribadi" is always '-'
   const departureArea = departure === 'Bersama' ? str(body.departureArea) : '-';
   const affiliationLabel = AFFILIATION_LABELS[status];
@@ -229,7 +227,7 @@ router.post('/register', async (req, res) => {
   if (!GENDERS.includes(gender)) return fail('Pilih jenis kelamin.');
   if (!KOMSEL_OPTIONS.includes(komselStatus)) return fail('Pilih status Komsel.');
   if (!STATUSES.includes(status)) return fail('Pilih status.');
-  if (gunadarma && !DEPARTURES.includes(departure)) return fail('Pilih opsi keberangkatan (Pribadi / Bersama).');
+  if (!DEPARTURES.includes(departure)) return fail('Pilih opsi keberangkatan (Pribadi / Bersama).');
   if (departure === 'Bersama' && !MEETING_POINTS[departureArea]) return fail('Pilih area keberangkatan.');
   if (gunadarma && !CAMPUS_REGIONS.some((r) => r.id === region)) return fail('Pilih region kampus.');
   // Students pick from the list, alumni type a year
@@ -306,14 +304,24 @@ router.patch('/registrations/:ticketId/checkin', sekretariatOnly, async (req, re
     return res.status(422).json({ success: false, message: 'checkedIn harus true atau false.' });
   }
 
-  const item = await setCheckIn(req.params.ticketId, checkedIn);
-  if (!item) {
+  const result = await setCheckIn(req.params.ticketId, checkedIn, req.user.name);
+  if (!result) {
     return res.status(404).json({ success: false, message: 'Tiket tidak ditemukan' });
   }
-  await audit(req, req.user.name, checkedIn ? 'CHECK-IN' : 'BATAL CHECK-IN', 'peserta', `${item.ticketId} — ${item.fullName}`);
+  const { wasCheckedIn, ...item } = result;
+  // A repeat is logged too: the same QR at a second desk (e.g. a shared screenshot) shows up in the audit log
+  const first = `pertama ${item.checkedInAt}${item.checkedInBy ? ` oleh ${item.checkedInBy}` : ''}`;
+  await audit(
+    req,
+    req.user.name,
+    wasCheckedIn ? 'CHECK-IN ULANG' : checkedIn ? 'CHECK-IN' : 'BATAL CHECK-IN',
+    'peserta',
+    `${item.ticketId} — ${item.fullName}${wasCheckedIn ? ` (${first})` : ''}`
+  );
 
   res.json({
     success: true,
+    alreadyCheckedIn: wasCheckedIn,
     message: `Status kehadiran berhasil diubah menjadi: ${item.isCheckedIn ? 'Hadir' : 'Belum Hadir'}`,
     data: item,
   });

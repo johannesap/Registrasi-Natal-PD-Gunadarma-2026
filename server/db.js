@@ -78,6 +78,8 @@ export function toFrontend(doc) {
     busDeparted: Boolean(doc.bus_departed),
     busReturned: Boolean(doc.bus_returned),
     checkedInAt: doc.checked_in_at ? formatCheckedIn(doc.checked_in_at) : null,
+    // Panitia account that scanned the first check-in (null for check-ins from before this was recorded)
+    checkedInBy: doc.checked_in_by || null,
     registeredAt: doc.registered_at || (doc.created_at ? formatRegistered(doc.created_at) : null),
   };
 }
@@ -121,23 +123,23 @@ export async function addRegistration(reg) {
   return toFrontend({ ...doc, _id: insertedId });
 }
 
-// Sets (not flips) the check-in, so a repeated request changes nothing; keeps the first check-in time
-export async function setCheckIn(ticketId, checkedIn) {
+// Sets (not flips) the check-in. Only the first check-in writes its time and the account (desk) that did it; a repeat
+// changes nothing and comes back with wasCheckedIn, from whichever desk. The filtered update decides atomically, so of
+// two desks scanning the same ticket at once exactly one gets the first check-in.
+export async function setCheckIn(ticketId, checkedIn, by = null) {
+  const col = await registrations();
+  const ticket_id = ticketId.trim().toUpperCase();
   const now = new Date();
-  const doc = await (await registrations()).findOneAndUpdate(
-    { ticket_id: ticketId.trim().toUpperCase() },
-    [
-      {
-        $set: {
-          is_checked_in: checkedIn,
-          checked_in_at: checkedIn ? { $ifNull: ['$checked_in_at', now] } : null,
-          updated_at: now,
-        },
-      },
-    ],
-    { returnDocument: 'after' }
+  const { modifiedCount } = await col.updateOne(
+    { ticket_id, is_checked_in: { $ne: checkedIn } },
+    {
+      $set: checkedIn
+        ? { is_checked_in: true, checked_in_at: now, checked_in_by: by, updated_at: now }
+        : { is_checked_in: false, checked_in_at: null, checked_in_by: null, updated_at: now },
+    }
   );
-  return doc ? toFrontend(doc) : null;
+  const doc = await col.findOne({ ticket_id });
+  return doc ? { ...toFrontend(doc), wasCheckedIn: checkedIn && !modifiedCount } : null;
 }
 
 // Sets (not flips) one bus leg ('berangkat' | 'pulang'); null when the ticket is unknown or does not ride the bus

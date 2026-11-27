@@ -272,7 +272,7 @@ export default function RegistrationSection() {
     const { name, value } = e.target;
 
     if (name === 'status') {
-      // Only Gunadarma students and alumni give region, angkatan and departure; everyone else is '-'.
+      // Only Gunadarma students and alumni give region and angkatan; everyone else is '-'.
       // The affiliation field starts empty on every status change (a media name is not an organisation name).
       const gunadarma = GUNADARMA_STATUSES.includes(value);
       const keep = (v) => (gunadarma ? (v === '-' ? '' : v) : '-');
@@ -282,8 +282,6 @@ export default function RegistrationSection() {
         region: keep(prev.region),
         // Students pick from ANGKATAN, so a typed alumni year outside it starts over
         angkatan: value === STUDENT_STATUS && !ANGKATAN.includes(prev.angkatan) ? '' : keep(prev.angkatan),
-        departure: keep(prev.departure),
-        departureArea: gunadarma ? prev.departureArea : '-',
         affiliation: AFFILIATION_LABELS[value] ? '' : '-',
       }));
       return;
@@ -716,8 +714,7 @@ export default function RegistrationSection() {
               </div>
             </div>
 
-            {/* Field: Opsi Keberangkatan & Area, only for Gunadarma students and alumni (the bus is for them) */}
-            {isGunadarma && (
+            {/* Field: Opsi Keberangkatan & Area */}
             <div className="space-y-3 p-3.5 sm:p-4 rounded-xl bg-emerald-950/40 border border-emerald-400/25">
               <ChoicePills
                 legend="Opsi Keberangkatan"
@@ -772,7 +769,6 @@ export default function RegistrationSection() {
                 </div>
               </div>
             </div>
-            )}
 
             {submitError && (
               <div
@@ -973,16 +969,13 @@ export default function RegistrationSection() {
                     <span className="text-white text-right">{registered.affiliation}</span>
                   </div>
                 )}
-                {/* Guests are not asked how they travel */}
-                {registered.departure !== '-' && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-400">Keberangkatan:</span>
-                    <span className="text-white">
-                      {registered.departure}
-                      {registered.departureArea !== '-' && ` (${registered.departureArea})`}
-                    </span>
-                  </div>
-                )}
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">Keberangkatan:</span>
+                  <span className="text-white">
+                    {registered.departure}
+                    {registered.departureArea !== '-' && ` (${registered.departureArea})`}
+                  </span>
+                </div>
                 <div className="pt-1.5 mt-1.5 border-t border-white/10 text-center text-gray-300">
                   {EVENT.date} • {EVENT.time} • {EVENT.venue}
                 </div>
