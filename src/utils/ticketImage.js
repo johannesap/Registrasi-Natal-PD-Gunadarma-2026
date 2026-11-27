@@ -9,6 +9,7 @@ const PAD = 24;
 const MARGIN = 20; // page colour around the card: a JPG has no transparency for the rounded corners
 const SCALE = 2;
 const QR_SIZE = 132; // check-in QR, beside the date/time/place box
+const LOGO = 44; // header logos, as tall as on the opening page (laptop size)
 const SANS = '"Plus Jakarta Sans", system-ui, sans-serif';
 const MONO = 'ui-monospace, Menlo, Consolas, monospace';
 const GOLD = '#ffefd2';
@@ -59,12 +60,21 @@ function star(ctx, cx, cy, r, color) {
   ctx.fill();
 }
 
+// Same-origin images, so the canvas stays exportable
+const loadImage = (src) =>
+  new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error(`${src} tidak termuat`));
+    img.src = src;
+  });
+
 // Draws the card H pixels tall and returns where its content ends
-function drawTicket(ctx, p, qr, H) {
+function drawTicket(ctx, p, qr, logos, H) {
   const inner = W - PAD * 2;
   const col = (inner - 12) / 2;
 
-  // Card: pine to maroon, palette ribbon on top, faint star watermark, gold border
+  // Card: navy to maroon, palette ribbon on top, cream border
   ctx.save();
   ctx.beginPath();
   ctx.roundRect(0, 0, W, H, 16);
@@ -79,32 +89,31 @@ function drawTicket(ctx, p, qr, H) {
     ctx.fillStyle = c;
     ctx.fillRect((W / 4) * i, 0, W / 4, 6);
   });
-  ctx.globalAlpha = 0.1;
-  star(ctx, W - 48, H - 48, 96, GOLD);
-  ctx.globalAlpha = 1;
   ctx.restore();
   ctx.beginPath();
   ctx.roundRect(0.5, 0.5, W - 1, H - 1, 16);
   ctx.strokeStyle = BORDER;
   ctx.stroke();
 
-  // Header
+  // Header: Gunadarma logo top left, PD logo top right, the title centred between them
   let y = PAD;
-  text(ctx, 'PERSEKUTUAN DOA UNIVERSITAS GUNADARMA', PAD, y + 10, `600 10px ${SANS}`, GOLD, '2.5px');
+  const [ugLogo, pdLogo] = logos;
+  const pdW = (LOGO * pdLogo.width) / pdLogo.height;
+  ctx.drawImage(ugLogo, PAD, y, (LOGO * ugLogo.width) / ugLogo.height, LOGO);
+  ctx.drawImage(pdLogo, W - PAD - pdW, y, pdW, LOGO);
+  const mid = W / 2;
+  ctx.textAlign = 'center';
+  // 1.8px spacing keeps this line between the two logos
+  text(ctx, 'PERSEKUTUAN DOA UNIVERSITAS GUNADARMA', mid, y + 10, `600 10px ${SANS}`, GOLD, '1.8px');
   ctx.font = '700 24px Cinzel';
-  const gold = ctx.createLinearGradient(PAD, 0, PAD + ctx.measureText('NATAL 2026').width + 12, 0);
+  const titleW = ctx.measureText('NATAL 2026').width + 12;
+  const gold = ctx.createLinearGradient(mid - titleW / 2, 0, mid + titleW / 2, 0);
   [['#fffaf0', 0], ['#ffefd2', 0.3], ['#ffefd2', 0.6], ['#fff5e3', 0.85], ['#c6b49f', 1]].forEach(([c, s]) =>
     gold.addColorStop(s, c)
   );
-  text(ctx, 'NATAL 2026', PAD, y + 42, '700 24px Cinzel', gold, '1.2px');
-  text(ctx, `“${EVENT.theme}” — ${EVENT.verseRef}`, PAD, y + 60, 'italic 400 13px "Cormorant Garamond"', 'rgba(255, 239, 210, 0.8)');
-  ctx.beginPath();
-  ctx.arc(W - PAD - 22, y + 22, 22, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(255, 239, 210, 0.1)';
-  ctx.fill();
-  ctx.strokeStyle = BORDER;
-  ctx.stroke();
-  star(ctx, W - PAD - 22, y + 22, 10, GOLD);
+  text(ctx, 'NATAL 2026', mid, y + 42, '700 24px Cinzel', gold, '1.2px');
+  text(ctx, `“${EVENT.theme}” — ${EVENT.verseRef}`, mid, y + 60, 'italic 400 13px "Cormorant Garamond"', 'rgba(255, 239, 210, 0.8)');
+  ctx.textAlign = 'left';
   y += 66 + 16;
   ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
   ctx.fillRect(PAD, y, inner, 1);
@@ -193,9 +202,10 @@ export async function ticketJpgBlob(p) {
   );
   const qr = document.createElement('canvas');
   await QRCode.toCanvas(qr, p.ticketId, { margin: 2, width: QR_SIZE * SCALE });
+  const logos = await Promise.all(['/logo-gunadarma.png', '/logo-pd.png'].map(loadImage));
 
   // Lay out once to learn the height, then draw for real
-  const H = drawTicket(document.createElement('canvas').getContext('2d'), p, qr, 2000) + PAD;
+  const H = drawTicket(document.createElement('canvas').getContext('2d'), p, qr, logos, 2000) + PAD;
   const canvas = document.createElement('canvas');
   canvas.width = (W + MARGIN * 2) * SCALE;
   canvas.height = (H + MARGIN * 2) * SCALE;
@@ -204,7 +214,7 @@ export async function ticketJpgBlob(p) {
   ctx.fillStyle = '#0d192d';
   ctx.fillRect(0, 0, W + MARGIN * 2, H + MARGIN * 2);
   ctx.translate(MARGIN, MARGIN);
-  drawTicket(ctx, p, qr, H);
+  drawTicket(ctx, p, qr, logos, H);
 
   return new Promise((resolve, reject) =>
     canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('Gambar tiket gagal dibuat'))), 'image/jpeg', 0.92)

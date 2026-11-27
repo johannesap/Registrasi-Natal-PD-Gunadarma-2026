@@ -11,10 +11,9 @@ import {
   BookOpen,
   Building2,
   Calendar,
-  Sparkles,
+  LoaderCircle,
   CheckCircle2,
   Download,
-  Ticket,
   Clock,
   ShieldCheck,
   Send,
@@ -95,17 +94,12 @@ function TicketCard({ p }) {
       {/* Gold foil ribbon border top */}
       <div className="absolute top-0 inset-x-0 h-1.5 palette-ribbon" />
 
-      {/* Watermark Christmas Star */}
-      <div className="absolute -right-12 -bottom-12 w-48 h-48 opacity-10 pointer-events-none">
-        <svg viewBox="0 0 200 200" className="w-full h-full text-amber-300 fill-current">
-          <polygon points="100,5 125,75 195,100 125,125 100,195 75,125 5,100 75,75" />
-        </svg>
-      </div>
-
-      {/* Header Card */}
-      <div className="flex items-start justify-between border-b border-white/10 pb-4 mb-4">
-        <div>
-          <span className="text-[10px] tracking-[0.25em] uppercase text-amber-300 font-semibold block">
+      {/* Header: Gunadarma logo top left, PD logo top right (as big as on the opening page, no backing), title centred.
+          Tracking 0.18em lets the first line fit between the logos on a laptop; on phones it wraps. */}
+      <div className="flex items-start justify-between gap-2 border-b border-white/10 pb-4 mb-4">
+        <img src="/logo-gunadarma.png" alt="Logo Universitas Gunadarma" className="h-9 sm:h-11 w-auto shrink-0" />
+        <div className="flex-1 min-w-0 text-center">
+          <span className="text-[10px] tracking-[0.18em] uppercase text-amber-300 font-semibold block">
             PERSEKUTUAN DOA UNIVERSITAS GUNADARMA
           </span>
           <h3 className="text-xl sm:text-2xl font-bold font-['Cinzel'] text-gold-gradient uppercase mt-0.5 tracking-wider">
@@ -115,9 +109,7 @@ function TicketCard({ p }) {
             &ldquo;{EVENT.theme}&rdquo; — {EVENT.verseRef}
           </p>
         </div>
-        <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-amber-400/10 border border-amber-400/30 flex items-center justify-center shrink-0">
-          <Sparkles className="w-4 sm:w-5 h-4 sm:h-5 text-amber-300" />
-        </div>
+        <img src="/logo-pd.png" alt="Logo Persekutuan Doa Universitas Gunadarma" className="h-9 sm:h-11 w-auto shrink-0" />
       </div>
 
       {/* Card Body Information */}
@@ -789,14 +781,11 @@ export default function RegistrationSection() {
               >
                 {isSubmitting ? (
                   <>
-                    <Sparkles className="w-4 h-4 animate-spin text-neutral-950" />
+                    <LoaderCircle className="w-4 h-4 animate-spin text-neutral-950" />
                     <span>MENGIRIMKAN TIKET OTOMATIS...</span>
                   </>
                 ) : (
-                  <>
-                    <Ticket className="w-4 h-4 text-neutral-950" />
-                    <span>KONFIRMASI REGISTRASI SEKARANG</span>
-                  </>
+                  <span>KONFIRMASI REGISTRASI SEKARANG</span>
                 )}
               </button>
             </div>
@@ -817,8 +806,7 @@ export default function RegistrationSection() {
         >
           <div className="w-full sticky top-24">
             <div className="flex items-center justify-between mb-3 px-1">
-              <span className="text-xs font-semibold tracking-widest uppercase text-amber-300 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span className="text-xs font-semibold tracking-widest uppercase text-amber-300">
                 PREVIEW E-TICKET RESMI
               </span>
               <span className="text-[11px] text-gray-400">Live Preview</span>
